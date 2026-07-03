@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Woolves Life OS — design tokens (dark premium, mobile-first).
+ * Single source of truth for color; Tailwind maps these via hsl(var(--x)).
+ */
+:root {
+  color-scheme: dark;
+
+  --background: 240 10% 4%;
+  --foreground: 0 0% 98%;
+
+  --card: 240 8% 8%;
+  --card-foreground: 0 0% 98%;
+
+  --muted: 240 6% 14%;
+  --muted-foreground: 240 5% 65%;
+
+  --border: 240 6% 18%;
+
+  --primary: 145 63% 49%;
+  --primary-foreground: 240 10% 4%;
+
+  /* Day-status semantics */
+  --status-ontrack: 145 63% 49%;
+  --status-atrisk: 38 92% 55%;
+  --status-broken: 0 72% 55%;
+  --status-recovery: 199 89% 55%;
+  --status-completed: 265 70% 62%;
+
+  --radius: 1rem;
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  /* Respect iPhone safe areas for the standalone PWA. */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+    env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/* Disable text selection callouts for a native app-like feel. */
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
