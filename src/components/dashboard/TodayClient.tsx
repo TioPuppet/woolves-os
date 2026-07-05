@@ -12,6 +12,8 @@ import { MissionCard } from './MissionCard';
 import { ModuleCard } from './ModuleCard';
 import { WaterCard } from './WaterCard';
 import { HabitCard } from './HabitCard';
+import { NutritionCard } from './NutritionCard';
+import { FoodSearchSheet } from './FoodSearchSheet';
 import { CheckinSheet } from './CheckinSheet';
 
 export function TodayClient({
@@ -21,15 +23,20 @@ export function TodayClient({
   profile: TodayProfile;
   initial: TodaySnapshot;
 }) {
-  const { snapshot, logWater, toggleHabit, submitCheckin } = useToday(
+  const { snapshot, logWater, toggleHabit, logFood, submitCheckin } = useToday(
     profile.timezone,
     initial,
   );
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [foodOpen, setFoodOpen] = useState(false);
 
   useEffect(() => {
     if (submitCheckin.isSuccess) setSheetOpen(false);
   }, [submitCheckin.isSuccess]);
+
+  useEffect(() => {
+    if (logFood.isSuccess) setFoodOpen(false);
+  }, [logFood.isSuccess]);
 
   const level = levelFromExp(snapshot.expTotal);
   const checkedIn = snapshot.checkinStatus != null;
@@ -42,6 +49,9 @@ export function TodayClient({
       missionAccomplished: false,
       missionFailed: false,
       yesterdayBroken: false,
+      protein: profile.goalProteinG
+        ? { current: snapshot.proteinToday, goal: profile.goalProteinG }
+        : undefined,
     });
 
   const habit = profile.requiredHabit?.trim() || null;
@@ -84,13 +94,15 @@ export function TodayClient({
         pending={toggleHabit.isPending}
       />
 
+      <NutritionCard
+        kcalToday={snapshot.kcalToday}
+        proteinToday={snapshot.proteinToday}
+        goalKcal={profile.goalKcal}
+        goalProteinG={profile.goalProteinG}
+        onOpen={() => setFoodOpen(true)}
+      />
+
       <section className="grid grid-cols-2 gap-3">
-        <ModuleCard
-          assetKey="alimentacao"
-          title="Nutrição"
-          value={profile.goalProteinG ? `0 / ${profile.goalProteinG}g` : null}
-          action="Em breve (M4)"
-        />
         <ModuleCard assetKey="calories" title="Treino" value={null} action="Em breve (M5)" />
         <ModuleCard
           assetKey="finances"
@@ -123,6 +135,13 @@ export function TodayClient({
           Check-in da noite
         </button>
       )}
+
+      <FoodSearchSheet
+        open={foodOpen}
+        onClose={() => setFoodOpen(false)}
+        onLog={(foodId, grams) => logFood.mutate({ foodId, grams })}
+        pending={logFood.isPending}
+      />
 
       <CheckinSheet
         open={sheetOpen}

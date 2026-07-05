@@ -99,6 +99,17 @@ export function useToday(timezone: string, initial: TodaySnapshot) {
     onSettled: () => qc.invalidateQueries({ queryKey: KEY }),
   });
 
+  const logFood = useMutation({
+    mutationFn: async (v: { foodId: number; grams: number }) => {
+      const { error } = await supabase.rpc('log_food', {
+        p_food_id: v.foodId,
+        p_grams: v.grams,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+  });
+
   const submitCheckin = useMutation({
     mutationFn: async (v: {
       mood: number;
@@ -119,6 +130,7 @@ export function useToday(timezone: string, initial: TodaySnapshot) {
     snapshot: query.data ?? initial,
     logWater,
     toggleHabit,
+    logFood,
     submitCheckin,
   };
 }

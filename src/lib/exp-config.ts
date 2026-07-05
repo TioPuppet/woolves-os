@@ -81,6 +81,31 @@ export interface LevelInfo {
   progress: number;
 }
 
+/**
+ * Level evolution icon — the identity asset changes as the wolf ranks up.
+ * Interim 4-stage evolution using existing thiings assets; swap to 8 dedicated
+ * rank icons later by editing this map (and dropping the PNGs in).
+ * Levels: 1 Cub · 2 Rookie · 3 Hunter · 4 Iron · 5 Alpha · 6 Warlord · 7 Legend · 8 Mythic
+ */
+import type { ThiingsAssetKey } from '@/lib/thiings-registry';
+
+export const LEVEL_ASSET_BY_LEVEL: readonly ThiingsAssetKey[] = [
+  'wolf', // 1 Cub
+  'wolf', // 2 Rookie Wolf
+  'wolf-obsidian', // 3 Hunter
+  'wolf-obsidian', // 4 Iron Wolf
+  'pack', // 5 Alpha
+  'pack', // 6 Warlord
+  'award', // 7 Legend
+  'award', // 8 Mythic Wolf
+];
+
+/** The evolving identity asset for a given level. */
+export function levelAssetKey(level: number): ThiingsAssetKey {
+  const idx = Math.min(Math.max(level, 1), 8) - 1;
+  return LEVEL_ASSET_BY_LEVEL[idx] ?? 'wolf';
+}
+
 /** Levels 1–8 (index 0 unused floor). UI copy in pt-BR-friendly names. */
 export const LEVEL_TITLES: readonly string[] = [
   'Cub',
