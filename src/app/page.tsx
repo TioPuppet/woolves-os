@@ -1,13 +1,17 @@
 import { redirect } from 'next/navigation';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { signOutAction } from './(auth)/actions';
-import { ThiingsAsset } from '@/components/ThiingsAsset';
 import { levelFromExp } from '@/lib/exp-config';
+import { computeDayStatus, type DaySnapshot } from '@/lib/day-status';
+import { localHour } from '@/lib/date';
+import { LevelHeader } from '@/components/dashboard/LevelHeader';
+import { MissionCard } from '@/components/dashboard/MissionCard';
+import { ModuleCard } from '@/components/dashboard/ModuleCard';
 
 /**
- * Today Dashboard — M1 version. The full card layout + day-status engine land
- * in M2/M3. For now this proves the dashboard-first flow: an onboarded user
- * lands here with their profile and goals loaded.
+ * Today Dashboard — M2. Real card layout + deterministic day-status badge.
+ * Data is still zeroed (logs + EXP ledger arrive in M3); the snapshot below is
+ * the seam the M3 quick logs will fill.
  */
 export default async function TodayPage() {
   const supabase = getSupabaseServerClient();
@@ -19,27 +23,38 @@ export default async function TodayPage() {
   const { data: profile } = await supabase
     .from('profiles')
     .select(
-      'display_name, goal_kcal, goal_protein_g, goal_water_ml, required_habit',
+      'display_name, timezone, goal_kcal, goal_protein_g, goal_water_ml, goal_spend_limit_brl, required_habit',
     )
     .eq('id', user.id)
     .maybeSingle();
 
-  // EXP ledger arrives in M3; show level 1 baseline for now.
-  const lvl = levelFromExp(0);
+  const timezone = profile?.timezone ?? 'America/Sao_Paulo';
   const name = profile?.display_name ?? user.email?.split('@')[0] ?? 'Lobo';
 
+  // EXP ledger + streak arrive in M3 — baseline for now.
+  const level = levelFromExp(0);
+  const streak = 0;
+
+  // Day snapshot (no logs yet → on_track).
+  const snapshot: DaySnapshot = {
+    localHour: localHour(timezone),
+    checkinDone: false,
+    missionAccomplished: false,
+    missionFailed: false,
+    yesterdayBroken: false,
+  };
+  const status = computeDayStatus(snapshot);
+
+  const habit = profile?.required_habit?.trim();
+  const water = profile?.goal_water_ml;
+  const mission = habit
+    ? `Cumpra “${habit}”${water ? ` e beba ${water}ml de água` : ''}.`
+    : 'Defina seu hábito nas configurações para receber a missão do dia.';
+
   return (
-    <main className="flex min-h-screen flex-col gap-6 px-5 py-8">
-      <header className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <ThiingsAsset assetKey="pack" size={44} />
-          <div>
-            <p className="text-xs uppercase tracking-widest text-muted-foreground">
-              Hoje
-            </p>
-            <h1 className="text-lg font-semibold">Olá, {name}</h1>
-          </div>
-        </div>
+    <main className="flex min-h-screen flex-col gap-5 px-5 py-8">
+      <div className="flex items-start justify-between">
+        <div className="flex-1" />
         <form action={signOutAction}>
           <button
             type="submit"
@@ -48,47 +63,52 @@ export default async function TodayPage() {
             Sair
           </button>
         </form>
-      </header>
+      </div>
 
-      <section className="flex items-center gap-3 rounded-lg border bg-card p-4">
-        <ThiingsAsset assetKey="life_exp" size={32} />
-        <div>
-          <p className="text-sm font-medium">
-            Nível {lvl.level} · {lvl.title}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            O loop diário (missão, EXP, streak) chega no M3.
-          </p>
-        </div>
+      <LevelHeader name={name} level={level} streak={streak} />
+
+      <MissionCard mission={mission} status={status} />
+
+      <section className="grid grid-cols-2 gap-3">
+        <ModuleCard
+          assetKey="water"
+          title="Água"
+          value={water ? `0 / ${water}ml` : null}
+          action="Registrar água"
+        />
+        <ModuleCard
+          assetKey="nutrition"
+          title="Nutrição"
+          value={
+            profile?.goal_protein_g
+              ? `0 / ${profile.goal_protein_g}g proteína`
+              : null
+          }
+          action="Registrar refeição"
+        />
+        <ModuleCard assetKey="workout" title="Treino" value={null} action="Registrar treino" />
+        <ModuleCard
+          assetKey="money"
+          title="Finanças"
+          value={
+            profile?.goal_spend_limit_brl != null
+              ? `Limite R$ ${profile.goal_spend_limit_brl}`
+              : null
+          }
+          action="Registrar gasto"
+        />
       </section>
 
-      <section className="rounded-lg border bg-card p-4">
-        <h2 className="mb-3 text-sm font-medium">Suas metas</h2>
-        <dl className="grid grid-cols-3 gap-3 text-center">
-          <div>
-            <dt className="text-xs text-muted-foreground">kcal</dt>
-            <dd className="text-base font-semibold">{profile?.goal_kcal ?? '—'}</dd>
-          </div>
-          <div>
-            <dt className="text-xs text-muted-foreground">Proteína</dt>
-            <dd className="text-base font-semibold">
-              {profile?.goal_protein_g ?? '—'}g
-            </dd>
-          </div>
-          <div>
-            <dt className="text-xs text-muted-foreground">Água</dt>
-            <dd className="text-base font-semibold">
-              {profile?.goal_water_ml ?? '—'}ml
-            </dd>
-          </div>
-        </dl>
-        {profile?.required_habit ? (
-          <p className="mt-4 text-sm">
-            <span className="text-muted-foreground">Hábito obrigatório: </span>
-            {profile.required_habit}
-          </p>
-        ) : null}
-      </section>
+      <button
+        type="button"
+        disabled
+        className="min-h-12 w-full rounded-2xl border bg-card text-sm font-semibold text-muted-foreground disabled:opacity-60"
+      >
+        Check-in da noite
+      </button>
+      <p className="-mt-3 text-center text-xs text-muted-foreground">
+        As ações do dia e o check-in ganham vida no próximo passo.
+      </p>
     </main>
   );
 }

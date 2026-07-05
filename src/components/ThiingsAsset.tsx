@@ -8,9 +8,10 @@ import { cn } from '@/lib/utils';
  * R1 — the ONLY sanctioned way to render an identity / gamification / module /
  * decorative visual. Renders /public/assets/thiings/{key}.png.
  *
- * If the PNG is missing (owner hasn't downloaded it yet), it renders a neutral
- * placeholder with reserved dimensions, the asset key label, and the alt text —
- * so layouts don't shift once real assets are dropped in.
+ * Rendering strategy avoids the broken-image flash while assets are missing:
+ * the neutral placeholder shows immediately; the PNG is loaded underneath and
+ * only revealed once it successfully loads. A missing file simply keeps the
+ * placeholder (no browser broken-image icon).
  *
  * Do NOT replace the placeholder with a custom illustration or icon library.
  */
@@ -30,44 +31,44 @@ export function ThiingsAsset({
   className,
 }: ThiingsAssetProps) {
   const entry = THIINGS_REGISTRY[assetKey];
-  const [missing, setMissing] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
   const label = alt ?? entry.alt;
   const dimension = { width: size, height: size } as const;
 
-  if (missing) {
-    return (
-      <span
-        role="img"
-        aria-label={label}
-        title={`thiings: ${assetKey}`}
-        style={dimension}
-        className={cn(
-          'inline-flex items-center justify-center rounded-md',
-          'border border-dashed border-border bg-muted text-muted-foreground',
-          'text-[9px] font-medium uppercase tracking-wide',
-          'overflow-hidden text-center leading-tight',
-          className,
-        )}
-      >
-        {assetKey}
-      </span>
-    );
-  }
-
   return (
-    // Plain <img> (not next/image) keeps the missing-file fallback simple and
-    // avoids remote-loader config. Assets are local, small, and static.
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={entry.path}
-      alt={label}
-      width={size}
-      height={size}
+    <span
+      role="img"
+      aria-label={label}
       style={dimension}
-      onError={() => setMissing(true)}
-      className={cn('inline-block select-none object-contain', className)}
-      draggable={false}
-    />
+      className={cn('relative inline-block shrink-0 select-none', className)}
+    >
+      {/* Neutral placeholder — visible until (and unless) the PNG loads. */}
+      {!loaded ? (
+        <span
+          title={`thiings: ${assetKey}`}
+          style={dimension}
+          className={cn(
+            'absolute inset-0 flex items-center justify-center rounded-xl',
+            'border border-dashed border-border bg-muted/60 text-muted-foreground',
+            'text-[8px] font-medium uppercase tracking-wider',
+          )}
+        >
+          {assetKey}
+        </span>
+      ) : null}
+
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={entry.path}
+        alt={label}
+        width={size}
+        height={size}
+        style={{ ...dimension, opacity: loaded ? 1 : 0 }}
+        onLoad={() => setLoaded(true)}
+        className="object-contain transition-opacity duration-200"
+        draggable={false}
+      />
+    </span>
   );
 }

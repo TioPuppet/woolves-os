@@ -32,7 +32,11 @@ export default function RootLayout({
     <html lang="pt-BR" className="dark">
       <body className="font-sans">
         <Providers>
-          <div className="mx-auto min-h-screen w-full max-w-app">{children}</div>
+          <div className="app-aura min-h-screen">
+            <div className="mx-auto min-h-screen w-full max-w-app">
+              {children}
+            </div>
+          </div>
         </Providers>
         <ServiceWorkerRegister />
       </body>

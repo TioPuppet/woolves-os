@@ -9,6 +9,15 @@
 :root {
   color-scheme: dark;
 
+  /* Premium system stack — resolves to SF Pro on iPhone/Mac (the primary
+     target). Defining these makes the font-family declarations valid; leaving
+     them undefined is what caused the serif fallback. A branded webfont can be
+     self-hosted later via next/font/local. */
+  --font-sans: 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    Roboto, Helvetica, Arial, sans-serif;
+  --font-display: 'SF Pro Display', -apple-system, BlinkMacSystemFont,
+    'Segoe UI', Roboto, sans-serif;
+
   --background: 240 10% 4%;
   --foreground: 0 0% 98%;
 
@@ -45,11 +54,31 @@ body {
 body {
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   /* Respect iPhone safe areas for the standalone PWA. */
   padding: env(safe-area-inset-top) env(safe-area-inset-right)
     env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/* Display face for brand headings. */
+h1,
+h2 {
+  font-family: var(--font-display), var(--font-sans), system-ui, sans-serif;
+  letter-spacing: -0.01em;
+}
+
+/* Subtle premium backdrop: a soft green aura from the top, fading to black.
+   Keeps the dark aesthetic while removing the flat "void" feel on wide screens. */
+.app-aura {
+  background:
+    radial-gradient(
+      120% 60% at 50% -10%,
+      hsl(145 63% 49% / 0.10),
+      transparent 60%
+    ),
+    hsl(var(--background));
 }
 
 /* Disable text selection callouts for a native app-like feel. */
