@@ -53,10 +53,17 @@ export function streakBonus(streakDays: number): number {
 export const LEVEL_CURVE_BASE = 100;
 export const LEVEL_CURVE_EXPONENT = 1.6;
 
-/** Cumulative EXP threshold to reach a given level. */
+/**
+ * Cumulative EXP required to *be at* a given level.
+ * Level 1 (Cub) starts at 0 EXP; each subsequent level needs 100 × (N-1)^1.6
+ * more cumulative EXP. This keeps a brand-new (0 EXP) user at Level 1 with a
+ * 0→100 progress bar, instead of negative progress.
+ */
 export function expRequiredForLevel(level: number): number {
-  if (level <= 0) return 0;
-  return Math.round(LEVEL_CURVE_BASE * Math.pow(level, LEVEL_CURVE_EXPONENT));
+  if (level <= 1) return 0;
+  return Math.round(
+    LEVEL_CURVE_BASE * Math.pow(level - 1, LEVEL_CURVE_EXPONENT),
+  );
 }
 
 export interface LevelInfo {
