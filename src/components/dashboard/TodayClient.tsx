@@ -86,14 +86,14 @@ export function TodayClient({
 
       <section className="grid grid-cols-2 gap-3">
         <ModuleCard
-          assetKey="nutrition"
+          assetKey="alimentacao"
           title="Nutrição"
           value={profile.goalProteinG ? `0 / ${profile.goalProteinG}g` : null}
           action="Em breve (M4)"
         />
-        <ModuleCard assetKey="workout" title="Treino" value={null} action="Em breve (M5)" />
+        <ModuleCard assetKey="calories" title="Treino" value={null} action="Em breve (M5)" />
         <ModuleCard
-          assetKey="money"
+          assetKey="finances"
           title="Finanças"
           value={
             profile.goalSpendLimitBrl != null

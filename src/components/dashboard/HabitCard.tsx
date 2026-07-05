@@ -19,7 +19,7 @@ export function HabitCard({
     return (
       <section className="rise rounded-2xl border bg-card p-5">
         <div className="mb-1 flex items-center gap-2.5">
-          <ThiingsAsset assetKey="mind" size={26} />
+          <ThiingsAsset assetKey="habits" size={26} />
           <h2 className="text-sm font-semibold">Hábito obrigatório</h2>
         </div>
         <p className="text-sm text-muted-foreground">

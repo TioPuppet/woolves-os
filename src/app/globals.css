@@ -25,12 +25,18 @@
   --card-foreground: 0 0% 98%;
 
   --muted: 240 6% 14%;
-  --muted-foreground: 240 5% 65%;
+  /* Titanium Silver #B8BDC7 — secondary text, stats, icons (Wolf Design System) */
+  --muted-foreground: 220 12% 75%;
 
   --border: 240 6% 18%;
 
-  --primary: 145 63% 49%;
+  /* Wolf Gold #D4AF37 — brand accent: goals, EXP, achievements, premium */
+  --primary: 46 65% 52%;
   --primary-foreground: 240 10% 4%;
+
+  /* IA Purple #7C5CFC — Woolves IA, insights, recommendations (M8) */
+  --ia: 252 96% 68%;
+  --ia-foreground: 0 0% 100%;
 
   /* Streak / energy accent (amber) */
   --streak: 38 92% 55%;
@@ -78,7 +84,7 @@ h2 {
   background:
     radial-gradient(
       120% 60% at 50% -10%,
-      hsl(145 63% 49% / 0.10),
+      hsl(46 65% 52% / 0.10),
       transparent 60%
     ),
     hsl(var(--background));

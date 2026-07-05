@@ -16,7 +16,7 @@ export function MissionCard({
     <section className="rounded-2xl border bg-card p-5">
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <ThiingsAsset assetKey="mission" size={22} />
+          <ThiingsAsset assetKey="target" size={22} />
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             {recovery ? 'Missão de recuperação' : 'Missão de hoje'}
           </h2>

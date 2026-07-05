@@ -1,4 +1,6 @@
 node_modules
+# Reference material (old app) — mined for ideas, not part of the build
+_reference/
 # Installed agent skills — restorable from skills-lock.json (keep the lock tracked)
 .agents/skills/
 .next

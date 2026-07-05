@@ -23,7 +23,7 @@ export function LevelHeader({
           <h1 className="text-xl font-semibold">Olá, {name}</h1>
         </div>
         <div className="flex items-center gap-2 rounded-full border bg-card px-3 py-1.5">
-          <ThiingsAsset assetKey="trophy" size={18} />
+          <ThiingsAsset assetKey="fire" size={18} />
           <span className="text-sm font-semibold">{streak}</span>
           <span className="text-xs text-muted-foreground">dias</span>
         </div>

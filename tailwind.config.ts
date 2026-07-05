@@ -31,6 +31,10 @@ const config: Config = {
           DEFAULT: 'hsl(var(--primary))',
           foreground: 'hsl(var(--primary-foreground))',
         },
+        ia: {
+          DEFAULT: 'hsl(var(--ia))',
+          foreground: 'hsl(var(--ia-foreground))',
+        },
         // Day-status semantic tokens (see DAY STATUS rule).
         status: {
           ontrack: 'hsl(var(--status-ontrack))',

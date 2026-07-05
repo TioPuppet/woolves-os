@@ -1,126 +1,109 @@
 /**
  * R1 — thiings.co Asset Registry (ABSOLUTE RULE).
  *
- * Every identity / module / gamification / decorative visual is a thiings.co
- * asset, manually downloaded by the owner into /public/assets/thiings/{key}.png.
+ * Keys mirror the exact filenames the owner downloaded into
+ * /public/assets/thiings/{key}.png. To add an asset: drop the PNG in that
+ * folder and add its key here. Until a PNG exists, <ThiingsAsset /> renders a
+ * neutral placeholder.
  *
- * - NEVER generate custom SVG illustrations for these elements.
- * - NEVER use icon libraries (Lucide, Font Awesome, Heroicons, emoji, CDNs).
- * - NEVER hotlink thiings.co.
- *
- * This file is the single source of truth for asset keys. To add an asset:
- *   1. add an entry here,
- *   2. drop the matching PNG into /public/assets/thiings/,
- *   3. reference it via <ThiingsAsset assetKey="..." />.
- *
- * Until the PNG exists, <ThiingsAsset /> renders a neutral placeholder.
+ * NEVER use icon libraries (Lucide, Font Awesome, Heroicons, emoji, CDNs) for
+ * identity/gamification visuals. NEVER hotlink thiings.co.
  */
 
 export type ThiingsAssetKey =
-  | 'body'
-  | 'money'
-  | 'mission'
-  | 'mind'
-  | 'pack'
-  | 'ai_coach'
+  | 'ai'
+  | 'alimentacao'
+  | 'article'
+  | 'award'
+  | 'book'
+  | 'calories'
+  | 'dashboard'
+  | 'educacao'
+  | 'finances'
+  | 'fire'
+  | 'freelance'
+  | 'habits'
+  | 'health'
+  | 'investimentos'
+  | 'journal'
+  | 'knowledge'
+  | 'lazer'
   | 'life_exp'
-  | 'alpha_badge'
-  | 'trophy'
-  | 'water'
+  | 'moradia'
+  | 'outros'
+  | 'pack'
+  | 'projects'
+  | 'purpose'
+  | 'roupas'
+  | 'salario'
+  | 'saude'
+  | 'settings'
   | 'sleep'
-  | 'workout'
-  | 'nutrition';
+  | 'steps'
+  | 'target'
+  | 'tecnologia'
+  | 'today'
+  | 'transporte'
+  | 'video'
+  | 'water'
+  | 'weight'
+  | 'wolf-obsidian'
+  | 'wolf';
 
 export interface ThiingsAssetEntry {
-  /** Stable key used in code and as the PNG filename (without extension). */
   key: ThiingsAssetKey;
-  /** Public path resolved by <ThiingsAsset />. */
   path: `/assets/thiings/${ThiingsAssetKey}.png`;
-  /** Where/why this asset is used — guides the owner's downloads. */
   usage: string;
-  /** Default alt text (pt-BR); overridable per usage. */
   alt: string;
 }
 
+function entry(
+  key: ThiingsAssetKey,
+  alt: string,
+  usage: string,
+): ThiingsAssetEntry {
+  return { key, path: `/assets/thiings/${key}.png`, alt, usage };
+}
+
 export const THIINGS_REGISTRY: Record<ThiingsAssetKey, ThiingsAssetEntry> = {
-  body: {
-    key: 'body',
-    path: '/assets/thiings/body.png',
-    usage: 'Módulo corpo/treino — identidade visual',
-    alt: 'Corpo',
-  },
-  money: {
-    key: 'money',
-    path: '/assets/thiings/money.png',
-    usage: 'Módulo finanças — identidade visual',
-    alt: 'Dinheiro',
-  },
-  mission: {
-    key: 'mission',
-    path: '/assets/thiings/mission.png',
-    usage: 'Missão diária no Today Dashboard',
-    alt: 'Missão',
-  },
-  mind: {
-    key: 'mind',
-    path: '/assets/thiings/mind.png',
-    usage: 'Módulo mente / check-in',
-    alt: 'Mente',
-  },
-  pack: {
-    key: 'pack',
-    path: '/assets/thiings/pack.png',
-    usage: 'Identidade Woolves (alcateia)',
-    alt: 'Alcateia',
-  },
-  ai_coach: {
-    key: 'ai_coach',
-    path: '/assets/thiings/ai_coach.png',
-    usage: 'Sugestão diária / relatório semanal (IA)',
-    alt: 'Coach de IA',
-  },
-  life_exp: {
-    key: 'life_exp',
-    path: '/assets/thiings/life_exp.png',
-    usage: 'Barra de EXP / nível',
-    alt: 'EXP de vida',
-  },
-  alpha_badge: {
-    key: 'alpha_badge',
-    path: '/assets/thiings/alpha_badge.png',
-    usage: 'Marcador de nível Alpha',
-    alt: 'Selo Alpha',
-  },
-  trophy: {
-    key: 'trophy',
-    path: '/assets/thiings/trophy.png',
-    usage: 'Conquista / dia concluído',
-    alt: 'Troféu',
-  },
-  water: {
-    key: 'water',
-    path: '/assets/thiings/water.png',
-    usage: 'Quick log de água',
-    alt: 'Água',
-  },
-  sleep: {
-    key: 'sleep',
-    path: '/assets/thiings/sleep.png',
-    usage: 'Quick log de sono',
-    alt: 'Sono',
-  },
-  workout: {
-    key: 'workout',
-    path: '/assets/thiings/workout.png',
-    usage: 'Sessão de treino',
-    alt: 'Treino',
-  },
-  nutrition: {
-    key: 'nutrition',
-    path: '/assets/thiings/nutrition.png',
-    usage: 'Módulo nutrição — kcal/proteína',
-    alt: 'Nutrição',
-  },
+  ai: entry('ai', 'IA', 'Coach de IA / sugestão diária'),
+  alimentacao: entry('alimentacao', 'Alimentação', 'Módulo nutrição'),
+  article: entry('article', 'Artigo', 'Conteúdo / leitura'),
+  award: entry('award', 'Troféu', 'Conquista / dia concluído'),
+  book: entry('book', 'Livro', 'Conhecimento / leitura'),
+  calories: entry('calories', 'Calorias', 'Treino / gasto calórico'),
+  dashboard: entry('dashboard', 'Painel', 'Visão geral'),
+  educacao: entry('educacao', 'Educação', 'Módulo educação'),
+  finances: entry('finances', 'Finanças', 'Módulo finanças'),
+  fire: entry('fire', 'Sequência', 'Streak / dias em sequência'),
+  freelance: entry('freelance', 'Freelance', 'Renda / trabalho'),
+  habits: entry('habits', 'Hábitos', 'Hábito obrigatório / hábitos'),
+  health: entry('health', 'Saúde', 'Saúde geral'),
+  investimentos: entry('investimentos', 'Investimentos', 'Finanças / investimentos'),
+  journal: entry('journal', 'Diário', 'Check-in / notas'),
+  knowledge: entry('knowledge', 'Conhecimento', 'Aprendizado'),
+  lazer: entry('lazer', 'Lazer', 'Lazer / descanso'),
+  life_exp: entry('life_exp', 'EXP de vida', 'Barra de EXP / nível'),
+  moradia: entry('moradia', 'Moradia', 'Despesas de moradia'),
+  outros: entry('outros', 'Outros', 'Categoria diversa'),
+  pack: entry('pack', 'Alcateia', 'Identidade Woolves (login/dashboard)'),
+  projects: entry('projects', 'Projetos', 'Metas / projetos'),
+  purpose: entry('purpose', 'Propósito', 'Onboarding / objetivo'),
+  roupas: entry('roupas', 'Roupas', 'Despesas com vestuário'),
+  salario: entry('salario', 'Salário', 'Renda'),
+  saude: entry('saude', 'Saúde', 'Saúde / consultas'),
+  settings: entry('settings', 'Configurações', 'Ajustes'),
+  sleep: entry('sleep', 'Sono', 'Quick log de sono'),
+  steps: entry('steps', 'Passos', 'Atividade / passos'),
+  target: entry('target', 'Missão', 'Missão diária'),
+  tecnologia: entry('tecnologia', 'Tecnologia', 'Despesas com tecnologia'),
+  today: entry('today', 'Hoje', 'Dashboard do dia'),
+  transporte: entry('transporte', 'Transporte', 'Despesas de transporte'),
+  video: entry('video', 'Vídeo', 'Conteúdo em vídeo'),
+  water: entry('water', 'Água', 'Quick log de água'),
+  weight: entry('weight', 'Peso', 'Quick log de peso'),
+  'wolf-obsidian': entry('wolf-obsidian', 'Lobo obsidiana', 'Variante escura do lobo'),
+  wolf: entry('wolf', 'Lobo', 'Mascote / identidade'),
 };
 
 /** All registered keys — useful for asset-completeness checks. */
