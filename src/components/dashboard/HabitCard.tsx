@@ -17,7 +17,7 @@ export function HabitCard({
 }) {
   if (!habit) {
     return (
-      <section className="rise rounded-2xl border bg-card p-5">
+      <section className="surface-2 rise rounded-3xl p-5">
         <div className="mb-1 flex items-center gap-2.5">
           <ThiingsAsset assetKey="habits" size={26} />
           <h2 className="text-sm font-semibold">Hábito obrigatório</h2>
@@ -36,10 +36,8 @@ export function HabitCard({
       onClick={() => onToggle(!done)}
       aria-pressed={done}
       className={cn(
-        'press flex w-full cursor-pointer items-center gap-3 rounded-2xl border p-5 text-left transition-colors',
-        done
-          ? 'border-primary/40 bg-primary/10'
-          : 'border-border bg-card hover:bg-muted/40',
+        'press surface-2 flex w-full cursor-pointer items-center gap-3 rounded-3xl p-5 text-left transition-colors',
+        done && 'border-primary/40 bg-primary/10',
       )}
     >
       <span

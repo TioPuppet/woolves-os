@@ -41,6 +41,15 @@ export function TodayClient({
   const level = levelFromExp(snapshot.expTotal);
   const checkedIn = snapshot.checkinStatus != null;
 
+  const hour = localHour(profile.timezone);
+  const timeGreeting =
+    hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
+  // Only treat as a real name if it looks like one (display_name), not an email prefix.
+  const raw = profile.name.trim();
+  const looksLikeName = /\s/.test(raw) || /[A-ZÀ-Ý]/.test(raw);
+  const firstName = looksLikeName ? raw.split(/\s+/)[0] : null;
+  const headerTitle = firstName ? `${timeGreeting}, ${firstName}` : timeGreeting;
+
   const status: DayStatus =
     snapshot.checkinStatus ??
     computeDayStatus({
@@ -64,7 +73,7 @@ export function TodayClient({
   const defaultMissionDone = snapshot.habitDone && (water == null || waterReached);
 
   return (
-    <main className="flex min-h-screen flex-col gap-5 px-5 py-8">
+    <main className="flex min-h-screen flex-col gap-6 px-5 py-10">
       <div className="flex items-center justify-end">
         <form action={signOutAction}>
           <button
@@ -76,7 +85,12 @@ export function TodayClient({
         </form>
       </div>
 
-      <LevelHeader name={profile.name} level={level} streak={snapshot.streak} />
+      <LevelHeader
+        eyebrow="Hoje"
+        title={headerTitle}
+        level={level}
+        streak={snapshot.streak}
+      />
 
       <MissionCard mission={mission} status={status} />
 
@@ -103,18 +117,9 @@ export function TodayClient({
       />
 
       <section className="grid grid-cols-2 gap-3">
-        <ModuleCard assetKey="calories" title="Treino" value={null} action="Em breve (M5)" />
-        <ModuleCard
-          assetKey="finances"
-          title="Finanças"
-          value={
-            profile.goalSpendLimitBrl != null
-              ? `Limite R$ ${profile.goalSpendLimitBrl}`
-              : null
-          }
-          action="Em breve (M6)"
-        />
-        <ModuleCard assetKey="sleep" title="Sono" value={null} action="Em breve (M7)" />
+        <ModuleCard assetKey="calories" title="Treino" />
+        <ModuleCard assetKey="finances" title="Finanças" />
+        <ModuleCard assetKey="sleep" title="Sono" />
       </section>
 
       {checkedIn ? (

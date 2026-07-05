@@ -18,7 +18,7 @@ export function WaterCard({
   const reached = goalMl != null && waterMl >= goalMl;
 
   return (
-    <section className="rise flex flex-col gap-4 rounded-2xl border bg-card p-5">
+    <section className="surface-2 rise flex flex-col gap-4 rounded-3xl p-5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <ThiingsAsset assetKey="water" size={26} />

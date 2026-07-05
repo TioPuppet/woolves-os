@@ -2,42 +2,25 @@ import { ThiingsAsset } from '@/components/ThiingsAsset';
 import { type ThiingsAssetKey } from '@/lib/thiings-registry';
 
 /**
- * Module tile on the dashboard. Every card shows one clear next action even
- * when empty (R5). Logging becomes interactive in M3+; for now the action is a
- * visual affordance labelled with what the user will do.
+ * A module not yet available — an elegant "locked" tile. No internal milestone
+ * codes in the UI; just a quiet "Em breve" in Titanium Silver.
  */
 export function ModuleCard({
   assetKey,
   title,
-  value,
-  action,
 }: {
   assetKey: ThiingsAssetKey;
   title: string;
-  /** Current value/summary, or null for the empty state. */
-  value?: string | null;
-  /** Next-action label (e.g. "Registrar água"). */
-  action: string;
 }) {
-  const empty = value == null || value === '';
-
   return (
-    <div className="flex flex-col justify-between gap-3 rounded-2xl border bg-card p-4">
+    <div className="surface-1 flex flex-col gap-3 rounded-2xl p-4 opacity-70">
       <div className="flex items-center gap-2.5">
-        <ThiingsAsset assetKey={assetKey} size={28} />
+        <ThiingsAsset assetKey={assetKey} size={26} className="opacity-70" />
         <span className="text-sm font-medium">{title}</span>
       </div>
-
-      <div>
-        <p
-          className={
-            empty ? 'text-sm text-muted-foreground' : 'text-lg font-semibold'
-          }
-        >
-          {empty ? '—' : value}
-        </p>
-        <p className="mt-1 text-xs font-medium text-primary">{action}</p>
-      </div>
+      <span className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+        Em breve
+      </span>
     </div>
   );
 }

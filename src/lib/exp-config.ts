@@ -20,6 +20,14 @@ export type ExpSource =
   | 'night_checkin'
   | 'streak_bonus';
 
+/**
+ * Economy version — bump when EXP values or the level curve change. Pattern
+ * ported from the old app: versioned calibration so a future recalibration
+ * never rewrites earned history (grants stay valued at the version they were
+ * awarded under). Persist alongside grants when the ledger gains a version col.
+ */
+export const ECONOMY_VERSION = '1.0.0';
+
 /** Base EXP awarded per source (before streak bonus). */
 export const EXP_VALUES: Record<Exclude<ExpSource, 'streak_bonus'>, number> = {
   workout_completed: 50,
