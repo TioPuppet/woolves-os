@@ -8,10 +8,10 @@ import { cn } from '@/lib/utils';
  * R1 — the ONLY sanctioned way to render an identity / gamification / module /
  * decorative visual. Renders /public/assets/thiings/{key}.png.
  *
- * Rendering strategy avoids the broken-image flash while assets are missing:
- * the neutral placeholder shows immediately; the PNG is loaded underneath and
- * only revealed once it successfully loads. A missing file simply keeps the
- * placeholder (no browser broken-image icon).
+ * The PNG is rendered directly so it appears as soon as the browser has it
+ * (works with SSR — no onLoad race). If the file is genuinely missing, onError
+ * swaps to a neutral, fully-contained placeholder (reserved dimensions, no
+ * overflowing text) so layouts never break.
  *
  * Do NOT replace the placeholder with a custom illustration or icon library.
  */
@@ -31,44 +31,43 @@ export function ThiingsAsset({
   className,
 }: ThiingsAssetProps) {
   const entry = THIINGS_REGISTRY[assetKey];
-  const [loaded, setLoaded] = useState(false);
+  const [missing, setMissing] = useState(false);
 
   const label = alt ?? entry.alt;
   const dimension = { width: size, height: size } as const;
 
-  return (
-    <span
-      role="img"
-      aria-label={label}
-      style={dimension}
-      className={cn('relative inline-block shrink-0 select-none', className)}
-    >
-      {/* Neutral placeholder — visible until (and unless) the PNG loads. */}
-      {!loaded ? (
-        <span
-          title={`thiings: ${assetKey}`}
-          style={dimension}
-          className={cn(
-            'absolute inset-0 flex items-center justify-center rounded-xl',
-            'border border-dashed border-border bg-muted/60 text-muted-foreground',
-            'text-[8px] font-medium uppercase tracking-wider',
-          )}
-        >
-          {assetKey}
-        </span>
-      ) : null}
+  if (missing) {
+    return (
+      <span
+        role="img"
+        aria-label={label}
+        title={`thiings: ${assetKey}`}
+        style={dimension}
+        className={cn(
+          'inline-flex shrink-0 items-center justify-center overflow-hidden',
+          'rounded-lg border border-dashed border-border bg-muted',
+          className,
+        )}
+      >
+        <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/50" />
+      </span>
+    );
+  }
 
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={entry.path}
-        alt={label}
-        width={size}
-        height={size}
-        style={{ ...dimension, opacity: loaded ? 1 : 0 }}
-        onLoad={() => setLoaded(true)}
-        className="object-contain transition-opacity duration-200"
-        draggable={false}
-      />
-    </span>
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={entry.path}
+      alt={label}
+      width={size}
+      height={size}
+      style={dimension}
+      onError={() => setMissing(true)}
+      draggable={false}
+      className={cn(
+        'inline-block shrink-0 select-none object-contain',
+        className,
+      )}
+    />
   );
 }
