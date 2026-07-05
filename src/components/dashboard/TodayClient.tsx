@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { ThiingsAsset } from '@/components/ThiingsAsset';
 import { useToday } from '@/hooks/useToday';
 import { type TodayProfile, type TodaySnapshot } from '@/lib/today';
 import { levelFromExp } from '@/lib/exp-config';
@@ -117,7 +119,18 @@ export function TodayClient({
       />
 
       <section className="grid grid-cols-2 gap-3">
-        <ModuleCard assetKey="calories" title="Treino" />
+        <Link
+          href="/treino"
+          className="press surface-2 flex flex-col gap-3 rounded-2xl p-4"
+        >
+          <div className="flex items-center gap-2.5">
+            <ThiingsAsset assetKey="calories" size={26} />
+            <span className="text-sm font-medium">Treino</span>
+          </div>
+          <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">
+            Registrar
+          </span>
+        </Link>
         <ModuleCard assetKey="finances" title="Finanças" />
         <ModuleCard assetKey="sleep" title="Sono" />
       </section>

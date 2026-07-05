@@ -1,0 +1,84 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
+
+export interface Exercise {
+  id: number;
+  name: string;
+}
+
+export interface PlanExercise {
+  id: number;
+  exercise_id: number;
+  order_idx: number;
+  exercise: Exercise;
+}
+
+export interface Plan {
+  id: number;
+  name: string;
+  plan_exercises: PlanExercise[];
+}
+
+export interface ActiveSession {
+  id: number;
+  plan_id: number | null;
+  ref_date: string;
+}
+
+export interface SetLog {
+  id: number;
+  exercise_id: number;
+  set_no: number;
+  reps: number | null;
+  load_kg: number | null;
+  rpe: number | null;
+}
+
+export interface LastPerf {
+  set_no: number;
+  reps: number | null;
+  load_kg: number | null;
+  rpe: number | null;
+  ref_date: string;
+}
+
+/** Plans with their ordered exercises. */
+export async function fetchPlans(client: SupabaseClient): Promise<Plan[]> {
+  const { data } = await client
+    .from('workout_plans')
+    .select(
+      'id, name, plan_exercises(id, exercise_id, order_idx, exercise:exercises(id, name))',
+    )
+    .order('created_at', { ascending: true });
+  const plans = (data ?? []) as unknown as Plan[];
+  plans.forEach((p) =>
+    p.plan_exercises?.sort((a, b) => a.order_idx - b.order_idx),
+  );
+  return plans;
+}
+
+/** The user's exercises (own + seed). */
+export async function fetchExercises(
+  client: SupabaseClient,
+): Promise<Exercise[]> {
+  const { data } = await client
+    .from('exercises')
+    .select('id, name')
+    .order('name');
+  return (data ?? []) as Exercise[];
+}
+
+/** Today's not-yet-completed session, if any. */
+export async function fetchActiveSession(
+  client: SupabaseClient,
+  date: string,
+): Promise<ActiveSession | null> {
+  const { data } = await client
+    .from('workout_sessions')
+    .select('id, plan_id, ref_date')
+    .eq('ref_date', date)
+    .eq('completed', false)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return (data as ActiveSession | null) ?? null;
+}
