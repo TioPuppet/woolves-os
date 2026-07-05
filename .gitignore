@@ -1,4 +1,6 @@
 node_modules
+# Installed agent skills — restorable from skills-lock.json (keep the lock tracked)
+.agents/skills/
 .next
 out
 build

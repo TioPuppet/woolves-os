@@ -1,69 +1,93 @@
+import { redirect } from 'next/navigation';
+import { getSupabaseServerClient } from '@/lib/supabase/server';
+import { signOutAction } from './(auth)/actions';
 import { ThiingsAsset } from '@/components/ThiingsAsset';
 import { levelFromExp } from '@/lib/exp-config';
-import { THIINGS_KEYS } from '@/lib/thiings-registry';
 
 /**
- * M0 placeholder for the Today Dashboard (built for real in M2/M3).
- * Its only job now is to prove the shell renders: design tokens, the
- * ThiingsAsset placeholder pipeline, and the EXP/level derivation.
+ * Today Dashboard — M1 version. The full card layout + day-status engine land
+ * in M2/M3. For now this proves the dashboard-first flow: an onboarded user
+ * lands here with their profile and goals loaded.
  */
-export default function TodayPage() {
-  const demoExp = 240;
-  const lvl = levelFromExp(demoExp);
+export default async function TodayPage() {
+  const supabase = getSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect('/login');
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select(
+      'display_name, goal_kcal, goal_protein_g, goal_water_ml, required_habit',
+    )
+    .eq('id', user.id)
+    .maybeSingle();
+
+  // EXP ledger arrives in M3; show level 1 baseline for now.
+  const lvl = levelFromExp(0);
+  const name = profile?.display_name ?? user.email?.split('@')[0] ?? 'Lobo';
 
   return (
     <main className="flex min-h-screen flex-col gap-6 px-5 py-8">
-      <header className="flex items-center gap-3">
-        <ThiingsAsset assetKey="pack" size={44} />
-        <div>
-          <p className="text-xs uppercase tracking-widest text-muted-foreground">
-            Woolves Life OS
-          </p>
-          <h1 className="text-lg font-semibold">M0 · Shell pronto</h1>
-        </div>
-      </header>
-
-      <section className="rounded-lg border bg-card p-4">
-        <div className="mb-3 flex items-center gap-3">
-          <ThiingsAsset assetKey="life_exp" size={32} />
-          <div className="flex-1">
-            <div className="flex items-baseline justify-between">
-              <span className="text-sm font-medium">
-                Nível {lvl.level} · {lvl.title}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                {lvl.intoLevel}
-                {lvl.span === Infinity ? '' : ` / ${lvl.span}`} EXP
-              </span>
-            </div>
-            <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
-              <div
-                className="h-full rounded-full bg-primary"
-                style={{ width: `${Math.round(lvl.progress * 100)}%` }}
-              />
-            </div>
+      <header className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <ThiingsAsset assetKey="pack" size={44} />
+          <div>
+            <p className="text-xs uppercase tracking-widest text-muted-foreground">
+              Hoje
+            </p>
+            <h1 className="text-lg font-semibold">Olá, {name}</h1>
           </div>
         </div>
-        <p className="text-xs text-muted-foreground">
-          Demonstração da curva de EXP (100 × N^1.6). Loop real chega no M3.
-        </p>
+        <form action={signOutAction}>
+          <button
+            type="submit"
+            className="text-xs font-medium text-muted-foreground hover:text-foreground"
+          >
+            Sair
+          </button>
+        </form>
+      </header>
+
+      <section className="flex items-center gap-3 rounded-lg border bg-card p-4">
+        <ThiingsAsset assetKey="life_exp" size={32} />
+        <div>
+          <p className="text-sm font-medium">
+            Nível {lvl.level} · {lvl.title}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            O loop diário (missão, EXP, streak) chega no M3.
+          </p>
+        </div>
       </section>
 
       <section className="rounded-lg border bg-card p-4">
-        <h2 className="mb-3 text-sm font-medium">
-          Assets thiings pendentes (placeholders abaixo)
-        </h2>
-        <div className="grid grid-cols-4 gap-3">
-          {THIINGS_KEYS.map((key) => (
-            <div key={key} className="flex flex-col items-center gap-1">
-              <ThiingsAsset assetKey={key} size={40} />
-            </div>
-          ))}
-        </div>
-        <p className="mt-3 text-xs text-muted-foreground">
-          Cada quadro vira o PNG real quando o arquivo for adicionado em
-          /public/assets/thiings/.
-        </p>
+        <h2 className="mb-3 text-sm font-medium">Suas metas</h2>
+        <dl className="grid grid-cols-3 gap-3 text-center">
+          <div>
+            <dt className="text-xs text-muted-foreground">kcal</dt>
+            <dd className="text-base font-semibold">{profile?.goal_kcal ?? '—'}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-muted-foreground">Proteína</dt>
+            <dd className="text-base font-semibold">
+              {profile?.goal_protein_g ?? '—'}g
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs text-muted-foreground">Água</dt>
+            <dd className="text-base font-semibold">
+              {profile?.goal_water_ml ?? '—'}ml
+            </dd>
+          </div>
+        </dl>
+        {profile?.required_habit ? (
+          <p className="mt-4 text-sm">
+            <span className="text-muted-foreground">Hábito obrigatório: </span>
+            {profile.required_habit}
+          </p>
+        ) : null}
       </section>
     </main>
   );
