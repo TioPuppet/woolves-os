@@ -12,6 +12,7 @@ export interface TodaySnapshot {
   streak: number;
   kcalToday: number;
   proteinToday: number;
+  spentToday: number;
 }
 
 /** Static profile context passed from the server (doesn't change intra-day). */
@@ -33,7 +34,7 @@ export async function fetchTodaySnapshot(
 ): Promise<TodaySnapshot> {
   const date = localDayString(timezone);
 
-  const [water, habit, checkin, exp, profile, food] = await Promise.all([
+  const [water, habit, checkin, exp, profile, food, spend] = await Promise.all([
     client.from('water_logs').select('ml').eq('ref_date', date),
     client
       .from('habit_logs')
@@ -49,6 +50,11 @@ export async function fetchTodaySnapshot(
     client.rpc('get_exp_total'),
     client.from('profiles').select('current_streak').maybeSingle(),
     client.from('food_logs').select('kcal, protein_g').eq('ref_date', date),
+    client
+      .from('transactions')
+      .select('amount_brl')
+      .eq('ref_date', date)
+      .eq('type', 'expense'),
   ]);
 
   const waterMl = (water.data ?? []).reduce(
@@ -58,6 +64,8 @@ export async function fetchTodaySnapshot(
   const foodRows = (food.data ?? []) as { kcal: number; protein_g: number }[];
   const kcalToday = foodRows.reduce((s, r) => s + (r.kcal ?? 0), 0);
   const proteinToday = foodRows.reduce((s, r) => s + Number(r.protein_g ?? 0), 0);
+  const spendRows = (spend.data ?? []) as { amount_brl: number }[];
+  const spentToday = spendRows.reduce((s, r) => s + Number(r.amount_brl ?? 0), 0);
 
   return {
     date,
@@ -68,5 +76,7 @@ export async function fetchTodaySnapshot(
     streak: profile.data?.current_streak ?? 0,
     kcalToday,
     proteinToday: Math.round(proteinToday * 10) / 10,
+    spentToday: Math.round(spentToday * 100) / 100,
   };
 }
+

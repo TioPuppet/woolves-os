@@ -61,6 +61,9 @@ export function TodayClient({
       protein: profile.goalProteinG
         ? { current: snapshot.proteinToday, goal: profile.goalProteinG }
         : undefined,
+      spend: profile.goalSpendLimitBrl
+        ? { current: snapshot.spentToday, goal: profile.goalSpendLimitBrl }
+        : undefined,
     });
 
   const habit = profile.requiredHabit?.trim() || null;
@@ -118,7 +121,18 @@ export function TodayClient({
             Registrar
           </span>
         </Link>
-        <ModuleCard assetKey="finances" title="Finanças" />
+        <Link
+          href="/financas"
+          className="press surface-2 flex flex-col gap-3 rounded-2xl p-4"
+        >
+          <div className="flex items-center gap-2.5">
+            <ThiingsAsset assetKey="finances" size={26} />
+            <span className="text-sm font-medium">Finanças</span>
+          </div>
+          <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">
+            Registrar
+          </span>
+        </Link>
         <ModuleCard assetKey="sleep" title="Sono" />
       </section>
 

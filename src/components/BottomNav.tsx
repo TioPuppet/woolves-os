@@ -11,6 +11,7 @@ const HIDDEN = ['/login', '/signup', '/onboarding'];
 const TABS: { href: string; label: string; icon: ThiingsAssetKey }[] = [
   { href: '/', label: 'Hoje', icon: 'today' },
   { href: '/treino', label: 'Treino', icon: 'calories' },
+  { href: '/financas', label: 'Finanças', icon: 'finances' },
   { href: '/perfil', label: 'Perfil', icon: 'settings' },
 ];
 
