@@ -48,6 +48,27 @@ export function categoryMeta(key: string | null): Category {
   return all.find((c) => c.key === key) ?? { key: 'outros', label: 'Outros', icon: 'outros' };
 }
 
+/** HSL triplet per category (Mobills-style distinct colors) for the donut/legend. */
+export const CATEGORY_COLOR: Record<string, string> = {
+  alimentacao: '25 90% 58%',
+  transporte: '211 90% 58%',
+  moradia: '265 70% 65%',
+  saude: '350 80% 62%',
+  lazer: '175 70% 48%',
+  educacao: '145 60% 50%',
+  roupas: '320 72% 64%',
+  tecnologia: '190 80% 55%',
+  investimentos: '46 67% 52%',
+  salario: '145 63% 49%',
+  freelance: '175 70% 48%',
+  outros: '240 5% 55%',
+};
+
+export function categoryColor(key: string | null): string {
+  return CATEGORY_COLOR[key ?? 'outros'] ?? '240 5% 55%';
+}
+
+
 export async function fetchFinanceToday(
   client: SupabaseClient,
   timezone: string,
