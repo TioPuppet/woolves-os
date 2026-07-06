@@ -275,26 +275,42 @@ function CompletionScreen({
   onTrainAgain: () => void;
 }) {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-8 px-8 pb-28 text-center">
-      <div className="rise flex flex-col items-center gap-6">
-        <ThiingsAsset assetKey="award" size={128} />
-        <div>
-          <h1 className="text-2xl font-bold uppercase tracking-tight">
-            Excelente trabalho, {name}
+    <main className="flex min-h-screen flex-col items-center justify-center gap-9 px-8 pb-28 text-center">
+      <div className="flex flex-col items-center gap-6">
+        <ThiingsAsset assetKey="award" size={132} className="anim-pop" />
+        <div className="flex flex-col gap-3">
+          <h1
+            className="anim-rise text-balance text-2xl font-bold uppercase leading-tight tracking-tight"
+            style={{ animationDelay: '120ms' }}
+          >
+            Excelente trabalho,{' '}
+            <span className="whitespace-nowrap">{name}</span>
           </h1>
-          <p className="mt-3 leading-relaxed text-muted-foreground">
+          <p
+            className="anim-rise text-balance leading-relaxed text-muted-foreground"
+            style={{ animationDelay: '240ms' }}
+          >
             {planName} concluído. A alcateia respeita quem termina o que começa.
           </p>
-          <p className="mt-1 leading-relaxed text-muted-foreground">
+          <p
+            className="anim-rise text-balance leading-relaxed text-muted-foreground"
+            style={{ animationDelay: '340ms' }}
+          >
             Agora descanse, hoje foi progresso. Amanhã é Evolução.
           </p>
         </div>
-        <span className="rounded-full bg-primary/15 px-4 py-2 text-sm font-semibold text-primary">
+        <span
+          className="anim-pop rounded-full bg-primary/15 px-4 py-2 text-sm font-semibold text-primary"
+          style={{ animationDelay: '480ms' }}
+        >
           +50 EXP conquistado
         </span>
       </div>
 
-      <div className="flex w-full max-w-xs flex-col gap-3">
+      <div
+        className="anim-rise flex w-full max-w-xs flex-col gap-3"
+        style={{ animationDelay: '620ms' }}
+      >
         <Link
           href="/"
           className="press flex min-h-12 items-center justify-center rounded-2xl bg-primary text-sm font-semibold text-primary-foreground transition hover:opacity-90"

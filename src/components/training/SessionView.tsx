@@ -44,6 +44,7 @@ function ExerciseBlock({
     loadKg: number | null;
     rpe: number | null;
     technique: string | null;
+    setType: string;
   }) => void;
   onDeleteSet: (id: number) => void;
   onAddTechnique: (name: string) => void;
@@ -66,6 +67,7 @@ function ExerciseBlock({
   const [reps, setReps] = useState('');
   const [load, setLoad] = useState('');
   const [rpe, setRpe] = useState('');
+  const [setType, setSetType] = useState<'work' | 'warmup'>('work');
   const [technique, setTechnique] = useState<string | null>(
     planExercise.technique ?? null,
   );
@@ -129,14 +131,29 @@ function ExerciseBlock({
           {sets.map((s) => (
             <div
               key={s.id}
-              className="flex items-center gap-3 text-sm tabular-nums"
+              className="flex items-center gap-2 text-sm tabular-nums"
             >
-              <span className="w-6 text-muted-foreground">{s.set_no}ª</span>
-              <span>{s.reps ?? '—'} reps</span>
-              <span>{s.load_kg ?? '—'} kg</span>
-              <span className="text-muted-foreground">RPE {s.rpe ?? '—'}</span>
+              <span className="w-5 shrink-0 text-xs text-muted-foreground">
+                {s.set_no}ª
+              </span>
+              {s.set_type === 'warmup' ? (
+                <span className="shrink-0 rounded bg-streak/15 px-1.5 py-0.5 text-[9px] font-bold uppercase text-streak">
+                  Aquec
+                </span>
+              ) : null}
+              <span className="shrink-0">
+                {s.reps ?? '—'}
+                <span className="text-xs text-muted-foreground"> reps</span>
+              </span>
+              <span className="shrink-0">
+                {s.load_kg ?? '—'}
+                <span className="text-xs text-muted-foreground"> kg</span>
+              </span>
+              <span className="shrink-0 text-xs text-muted-foreground">
+                RPE {s.rpe ?? '—'}
+              </span>
               {s.technique ? (
-                <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-medium text-primary">
+                <span className="min-w-0 truncate rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-medium text-primary">
                   {s.technique}
                 </span>
               ) : null}
@@ -144,7 +161,7 @@ function ExerciseBlock({
                 type="button"
                 onClick={() => onDeleteSet(s.id)}
                 aria-label="Remover série"
-                className="ml-auto text-muted-foreground hover:text-status-broken"
+                className="ml-auto shrink-0 text-muted-foreground hover:text-status-broken"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
                   <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -207,6 +224,27 @@ function ExerciseBlock({
         )}
       </div>
 
+      {/* Warm-up vs work set */}
+      <div className="flex gap-1.5">
+        {(['work', 'warmup'] as const).map((t) => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => setSetType(t)}
+            className={cn(
+              'press rounded-full border px-3 py-1 text-[11px] font-medium transition-colors',
+              setType === t
+                ? t === 'warmup'
+                  ? 'border-streak/50 bg-streak/15 text-streak'
+                  : 'border-primary/50 bg-primary/15 text-primary'
+                : 'border-border text-muted-foreground',
+            )}
+          >
+            {t === 'work' ? 'Trabalho' : 'Aquecimento'}
+          </button>
+        ))}
+      </div>
+
       {/* Set inputs */}
       <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2">
         <input type="number" inputMode="numeric" value={reps} onChange={(e) => setReps(e.target.value)} placeholder="reps" className="min-h-10 min-w-0 rounded-lg border border-border bg-card px-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/60" />
@@ -223,6 +261,7 @@ function ExerciseBlock({
               loadKg: load === '' ? null : Number(load),
               rpe: rpe === '' ? null : Number(rpe),
               technique,
+              setType,
             });
             reset();
           }}
@@ -295,7 +334,7 @@ export function SessionView({
     queryFn: async () => {
       const { data } = await supabase
         .from('set_logs')
-        .select('id, exercise_id, set_no, reps, load_kg, rpe, technique')
+        .select('id, exercise_id, set_no, reps, load_kg, rpe, technique, set_type')
         .eq('session_id', sessionId)
         .order('set_no');
       return (data ?? []) as SetLog[];
@@ -321,6 +360,7 @@ export function SessionView({
       loadKg: number | null;
       rpe: number | null;
       technique: string | null;
+      setType: string;
     }) => {
       const { error } = await supabase.from('set_logs').insert({
         session_id: sessionId,
@@ -330,6 +370,7 @@ export function SessionView({
         load_kg: v.loadKg,
         rpe: v.rpe,
         technique: v.technique,
+        set_type: v.setType,
       });
       if (error) throw error;
     },

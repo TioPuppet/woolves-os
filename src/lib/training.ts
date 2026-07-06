@@ -39,6 +39,7 @@ export interface SetLog {
   load_kg: number | null;
   rpe: number | null;
   technique: string | null;
+  set_type: string;
 }
 
 export interface LastPerf {
