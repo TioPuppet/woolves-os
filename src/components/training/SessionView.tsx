@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { PlanExercise, SetLog, LastPerf } from '@/lib/training';
 import { CURATED_TECHNIQUES } from '@/lib/techniques';
-import { muscleAssetKey } from '@/lib/muscles';
+import { muscleAssetKey, muscleLabel } from '@/lib/muscles';
 import { ThiingsAsset } from '@/components/ThiingsAsset';
 import { cn } from '@/lib/utils';
 
@@ -352,20 +352,37 @@ export function SessionView({
   const allSets = sessionSets.data ?? [];
   const custom = techniques.data ?? [];
 
+  // Group exercises by muscle group, preserving plan order.
+  const groups: { key: string; items: PlanExercise[] }[] = [];
+  for (const pe of exercises) {
+    const g = pe.exercise.muscle_group ?? 'outros';
+    const found = groups.find((x) => x.key === g);
+    if (found) found.items.push(pe);
+    else groups.push({ key: g, items: [pe] });
+  }
+
   return (
-    <div className="flex flex-col gap-4">
-      {exercises.map((pe) => (
-        <ExerciseBlock
-          key={pe.id}
-          planExercise={pe}
-          sets={allSets.filter((s) => s.exercise_id === pe.exercise_id)}
-          techniques={custom}
-          onLog={(v) => logSet.mutate(v)}
-          onDeleteSet={(id) => deleteSet.mutate(id)}
-          onAddTechnique={(name) => addTechnique.mutate(name)}
-          onDeleteTechnique={(id) => deleteTechnique.mutate(id)}
-          logging={logSet.isPending}
-        />
+    <div className="flex flex-col gap-6">
+      {groups.map((grp) => (
+        <div key={grp.key} className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <ThiingsAsset assetKey={muscleAssetKey(grp.key)} size={26} />
+            <h3 className="text-base font-semibold">{muscleLabel(grp.key)}</h3>
+          </div>
+          {grp.items.map((pe) => (
+            <ExerciseBlock
+              key={pe.id}
+              planExercise={pe}
+              sets={allSets.filter((s) => s.exercise_id === pe.exercise_id)}
+              techniques={custom}
+              onLog={(v) => logSet.mutate(v)}
+              onDeleteSet={(id) => deleteSet.mutate(id)}
+              onAddTechnique={(name) => addTechnique.mutate(name)}
+              onDeleteTechnique={(id) => deleteTechnique.mutate(id)}
+              logging={logSet.isPending}
+            />
+          ))}
+        </div>
       ))}
 
       <button

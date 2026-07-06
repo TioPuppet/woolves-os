@@ -16,6 +16,7 @@ export interface PlanExercise {
 export interface Plan {
   id: number;
   name: string;
+  muscle_groups: string[];
   plan_exercises: PlanExercise[];
 }
 
@@ -48,7 +49,7 @@ export async function fetchPlans(client: SupabaseClient): Promise<Plan[]> {
   const { data } = await client
     .from('workout_plans')
     .select(
-      'id, name, plan_exercises(id, exercise_id, order_idx, exercise:exercises(id, name, muscle_group))',
+      'id, name, muscle_groups, plan_exercises(id, exercise_id, order_idx, exercise:exercises(id, name, muscle_group))',
     )
     .order('created_at', { ascending: true });
   const plans = (data ?? []) as unknown as Plan[];

@@ -44,14 +44,24 @@ export function useTraining(userId: string, timezone: string) {
   });
 
   const createPlan = useMutation({
-    mutationFn: async (name: string): Promise<Plan> => {
+    mutationFn: async (v: {
+      name: string;
+      muscleGroups: string[];
+    }): Promise<Plan> => {
       const { data, error } = await supabase
         .from('workout_plans')
-        .insert({ user_id: userId, name: name.trim() })
-        .select('id, name')
+        .insert({
+          user_id: userId,
+          name: v.name.trim(),
+          muscle_groups: v.muscleGroups,
+        })
+        .select('id, name, muscle_groups')
         .single();
       if (error) throw error;
-      return { ...(data as { id: number; name: string }), plan_exercises: [] };
+      return {
+        ...(data as { id: number; name: string; muscle_groups: string[] }),
+        plan_exercises: [],
+      };
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['plans'] }),
   });

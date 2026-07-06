@@ -23,3 +23,9 @@ export function muscleAssetKey(
 ): ThiingsAssetKey {
   return value && KEYS.has(value) ? (value as ThiingsAssetKey) : 'calories';
 }
+
+/** Human label for a muscle-group key. */
+export function muscleLabel(key: string): string {
+  if (key === 'outros') return 'Outros';
+  return MUSCLE_GROUPS.find((m) => m.key === key)?.label ?? key;
+}
