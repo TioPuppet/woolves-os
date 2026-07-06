@@ -209,9 +209,9 @@ function ExerciseBlock({
 
       {/* Set inputs */}
       <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2">
-        <input type="number" inputMode="numeric" value={reps} onChange={(e) => setReps(e.target.value)} placeholder="reps" className="min-h-10 rounded-lg border border-border bg-card px-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/60" />
-        <input type="number" inputMode="decimal" value={load} onChange={(e) => setLoad(e.target.value)} placeholder="kg" className="min-h-10 rounded-lg border border-border bg-card px-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/60" />
-        <input type="number" inputMode="decimal" value={rpe} onChange={(e) => setRpe(e.target.value)} placeholder="RPE" className="min-h-10 rounded-lg border border-border bg-card px-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/60" />
+        <input type="number" inputMode="numeric" value={reps} onChange={(e) => setReps(e.target.value)} placeholder="reps" className="min-h-10 min-w-0 rounded-lg border border-border bg-card px-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/60" />
+        <input type="number" inputMode="decimal" value={load} onChange={(e) => setLoad(e.target.value)} placeholder="kg" className="min-h-10 min-w-0 rounded-lg border border-border bg-card px-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/60" />
+        <input type="number" inputMode="decimal" value={rpe} onChange={(e) => setRpe(e.target.value)} placeholder="RPE" className="min-h-10 min-w-0 rounded-lg border border-border bg-card px-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/60" />
         <button
           type="button"
           disabled={logging || !canAdd}
@@ -375,6 +375,17 @@ export function SessionView({
     },
   });
 
+  const cancel = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from('workout_sessions')
+        .delete()
+        .eq('id', sessionId);
+      if (error) throw error;
+    },
+    onSuccess: () => onComplete(),
+  });
+
   const allSets = sessionSets.data ?? [];
   const custom = techniques.data ?? [];
 
@@ -418,6 +429,23 @@ export function SessionView({
         className="press min-h-12 w-full cursor-pointer rounded-2xl bg-primary text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
       >
         {complete.isPending ? 'Concluindo…' : 'Concluir treino (+50 EXP)'}
+      </button>
+
+      <button
+        type="button"
+        disabled={cancel.isPending}
+        onClick={() => {
+          if (
+            window.confirm(
+              'Cancelar este treino? As séries registradas serão perdidas.',
+            )
+          ) {
+            cancel.mutate();
+          }
+        }}
+        className="press min-h-11 w-full cursor-pointer rounded-2xl border border-status-broken/30 text-sm font-medium text-status-broken transition hover:bg-status-broken/10 disabled:opacity-50"
+      >
+        {cancel.isPending ? 'Cancelando…' : 'Cancelar treino'}
       </button>
     </div>
   );
