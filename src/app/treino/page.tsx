@@ -13,11 +13,15 @@ export default async function TreinoPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('timezone')
+    .select('timezone, display_name')
     .eq('id', user.id)
     .maybeSingle();
 
   const timezone = profile?.timezone ?? 'America/Sao_Paulo';
+  const raw = (profile?.display_name ?? '').trim();
+  const looksLikeName = /\s/.test(raw) || /[A-ZÀ-Ý]/.test(raw);
+  const name = looksLikeName ? (raw.split(/\s+/)[0] ?? 'Lobo') : 'Lobo';
+
   const initialSession = await fetchActiveSession(
     supabase,
     localDayString(timezone),
@@ -26,6 +30,7 @@ export default async function TreinoPage() {
   return (
     <TrainingClient
       userId={user.id}
+      name={name}
       timezone={timezone}
       initialSession={initialSession}
     />

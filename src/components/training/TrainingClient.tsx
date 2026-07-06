@@ -265,45 +265,61 @@ function PlanCard({
 }
 
 function CompletionScreen({
+  name,
   planName,
-  onDone,
+  onTrainAgain,
 }: {
+  name: string;
   planName: string;
-  onDone: () => void;
+  onTrainAgain: () => void;
 }) {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-6 px-8 pb-28 text-center">
+    <main className="flex min-h-screen flex-col items-center justify-center gap-8 px-8 pb-28 text-center">
       <div className="rise flex flex-col items-center gap-6">
         <ThiingsAsset assetKey="award" size={128} />
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Excelente trabalho, Lobo!
+          <h1 className="text-2xl font-bold uppercase tracking-tight">
+            Excelente trabalho, {name}
           </h1>
-          <p className="mt-2 leading-relaxed text-muted-foreground">
-            {planName} concluído. Agora descanse — amanhã a alcateia levanta de novo.
+          <p className="mt-3 leading-relaxed text-muted-foreground">
+            {planName} concluído. A alcateia respeita quem termina o que começa.
+          </p>
+          <p className="mt-1 leading-relaxed text-muted-foreground">
+            Agora descanse, hoje foi progresso. Amanhã é Evolução.
           </p>
         </div>
         <span className="rounded-full bg-primary/15 px-4 py-2 text-sm font-semibold text-primary">
           +50 EXP conquistado
         </span>
       </div>
-      <button
-        type="button"
-        onClick={onDone}
-        className="press min-h-12 w-full max-w-xs cursor-pointer rounded-2xl bg-primary text-sm font-semibold text-primary-foreground transition hover:opacity-90"
-      >
-        Voltar
-      </button>
+
+      <div className="flex w-full max-w-xs flex-col gap-3">
+        <Link
+          href="/"
+          className="press flex min-h-12 items-center justify-center rounded-2xl bg-primary text-sm font-semibold text-primary-foreground transition hover:opacity-90"
+        >
+          Voltar ao início
+        </Link>
+        <button
+          type="button"
+          onClick={onTrainAgain}
+          className="press min-h-12 cursor-pointer rounded-2xl border border-border text-sm font-medium text-muted-foreground transition hover:text-foreground"
+        >
+          Realizar outro treino
+        </button>
+      </div>
     </main>
   );
 }
 
 export function TrainingClient({
   userId,
+  name,
   timezone,
   initialSession,
 }: {
   userId: string;
+  name: string;
   timezone: string;
   initialSession: ActiveSession | null;
 }) {
@@ -365,7 +381,11 @@ export function TrainingClient({
 
   if (celebrate) {
     return (
-      <CompletionScreen planName={celebrate} onDone={() => setCelebrate(null)} />
+      <CompletionScreen
+        name={name}
+        planName={celebrate}
+        onTrainAgain={() => setCelebrate(null)}
+      />
     );
   }
 
