@@ -82,12 +82,33 @@ export function useTraining(userId: string, timezone: string) {
       planId: number;
       exerciseId: number;
       orderIdx: number;
+      muscleGroup: string;
     }) => {
       const { error } = await supabase.from('plan_exercises').insert({
         plan_id: v.planId,
         exercise_id: v.exerciseId,
         order_idx: v.orderIdx,
+        muscle_group: v.muscleGroup,
       });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['plans'] }),
+  });
+
+  const updatePlanExercise = useMutation({
+    mutationFn: async (v: {
+      id: number;
+      patch: {
+        target_sets?: number | null;
+        target_reps?: string | null;
+        rest_seconds?: number | null;
+        technique?: string | null;
+      };
+    }) => {
+      const { error } = await supabase
+        .from('plan_exercises')
+        .update(v.patch)
+        .eq('id', v.id);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['plans'] }),
@@ -128,6 +149,7 @@ export function useTraining(userId: string, timezone: string) {
     createPlan,
     deletePlan,
     addExerciseToPlan,
+    updatePlanExercise,
     deletePlanExercise,
     startSession,
   };

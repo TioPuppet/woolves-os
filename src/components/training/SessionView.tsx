@@ -66,7 +66,9 @@ function ExerciseBlock({
   const [reps, setReps] = useState('');
   const [load, setLoad] = useState('');
   const [rpe, setRpe] = useState('');
-  const [technique, setTechnique] = useState<string | null>(null);
+  const [technique, setTechnique] = useState<string | null>(
+    planExercise.technique ?? null,
+  );
   const [customOpen, setCustomOpen] = useState(false);
   const [customName, setCustomName] = useState('');
 
@@ -88,11 +90,35 @@ function ExerciseBlock({
     <div className="surface-2 flex flex-col gap-3 rounded-2xl p-4">
       <div className="flex items-center gap-2.5">
         <ThiingsAsset
-          assetKey={muscleAssetKey(planExercise.exercise.muscle_group)}
-          size={22}
+          assetKey={muscleAssetKey(
+            planExercise.muscle_group ?? planExercise.exercise.muscle_group,
+          )}
+          size={30}
         />
         <span className="text-sm font-semibold">{planExercise.exercise.name}</span>
       </div>
+
+      {planExercise.target_sets ||
+      planExercise.target_reps ||
+      planExercise.rest_seconds ||
+      planExercise.technique ? (
+        <p className="text-xs font-medium text-primary">
+          Meta:{' '}
+          {[
+            planExercise.target_sets && planExercise.target_reps
+              ? `${planExercise.target_sets}×${planExercise.target_reps}`
+              : planExercise.target_sets
+                ? `${planExercise.target_sets} séries`
+                : planExercise.target_reps
+                  ? `${planExercise.target_reps} reps`
+                  : null,
+            planExercise.rest_seconds ? `${planExercise.rest_seconds}s desc.` : null,
+            planExercise.technique,
+          ]
+            .filter(Boolean)
+            .join(' · ')}
+        </p>
+      ) : null}
 
       <p className="text-xs text-muted-foreground">
         {perfText ? `Última vez: ${perfText}` : 'Primeira vez neste exercício.'}
@@ -355,7 +381,7 @@ export function SessionView({
   // Group exercises by muscle group, preserving plan order.
   const groups: { key: string; items: PlanExercise[] }[] = [];
   for (const pe of exercises) {
-    const g = pe.exercise.muscle_group ?? 'outros';
+    const g = pe.muscle_group ?? pe.exercise.muscle_group ?? 'outros';
     const found = groups.find((x) => x.key === g);
     if (found) found.items.push(pe);
     else groups.push({ key: g, items: [pe] });

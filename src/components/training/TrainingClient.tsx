@@ -4,21 +4,120 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useTraining } from '@/hooks/useTraining';
 import type { Plan, PlanExercise, ActiveSession } from '@/lib/training';
-import { MUSCLE_GROUPS, muscleAssetKey } from '@/lib/muscles';
+import { MUSCLE_GROUPS, muscleAssetKey, muscleLabel } from '@/lib/muscles';
+import { CURATED_TECHNIQUES } from '@/lib/techniques';
 import { ThiingsAsset } from '@/components/ThiingsAsset';
 import { cn } from '@/lib/utils';
 import { SessionView } from './SessionView';
 
-function labelFor(key: string): string {
-  return MUSCLE_GROUPS.find((m) => m.key === key)?.label ?? key;
+const inputCls =
+  'min-h-10 w-full rounded-lg border border-border bg-card px-2.5 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary/60';
+
+function groupOf(pe: PlanExercise): string {
+  return pe.muscle_group ?? pe.exercise.muscle_group ?? 'outros';
 }
 
-/** One muscle-group section inside a plan: icon title + its exercises + add. */
+/** A planned exercise with editable prescription (sets/reps/rest/technique). */
+function PlanExerciseRow({
+  pe,
+  onUpdate,
+  onDelete,
+}: {
+  pe: PlanExercise;
+  onUpdate: (
+    id: number,
+    patch: {
+      target_sets?: number | null;
+      target_reps?: string | null;
+      rest_seconds?: number | null;
+      technique?: string | null;
+    },
+  ) => void;
+  onDelete: (id: number) => void;
+}) {
+  const [sets, setSets] = useState(pe.target_sets?.toString() ?? '');
+  const [reps, setReps] = useState(pe.target_reps ?? '');
+  const [rest, setRest] = useState(pe.rest_seconds?.toString() ?? '');
+  const [tech, setTech] = useState(pe.technique ?? '');
+
+  return (
+    <div className="surface-1 rise flex flex-col gap-3 rounded-xl p-3">
+      <div className="flex items-center justify-between gap-2">
+        <span className="flex min-w-0 items-center gap-2.5">
+          <ThiingsAsset assetKey={muscleAssetKey(groupOf(pe))} size={30} />
+          <span className="truncate text-sm font-semibold">
+            {pe.exercise.name}
+          </span>
+        </span>
+        <button
+          type="button"
+          onClick={() => onDelete(pe.id)}
+          aria-label={`Remover ${pe.exercise.name}`}
+          className="shrink-0 text-muted-foreground transition-colors hover:text-status-broken"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+            <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        </button>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        <input
+          inputMode="numeric"
+          value={sets}
+          onChange={(e) => setSets(e.target.value)}
+          onBlur={() =>
+            onUpdate(pe.id, { target_sets: sets === '' ? null : Number(sets) })
+          }
+          placeholder="Séries"
+          className={inputCls}
+        />
+        <input
+          value={reps}
+          onChange={(e) => setReps(e.target.value)}
+          onBlur={() => onUpdate(pe.id, { target_reps: reps || null })}
+          placeholder="Reps"
+          className={inputCls}
+        />
+        <input
+          inputMode="numeric"
+          value={rest}
+          onChange={(e) => setRest(e.target.value)}
+          onBlur={() =>
+            onUpdate(pe.id, {
+              rest_seconds: rest === '' ? null : Number(rest),
+            })
+          }
+          placeholder="Desc. (s)"
+          className={inputCls}
+        />
+      </div>
+
+      <select
+        value={tech}
+        onChange={(e) => {
+          setTech(e.target.value);
+          onUpdate(pe.id, { technique: e.target.value || null });
+        }}
+        className={cn(inputCls, 'text-foreground')}
+      >
+        <option value="">Técnica (opcional)</option>
+        {CURATED_TECHNIQUES.map((t) => (
+          <option key={t} value={t}>
+            {t}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 function GroupSection({
   groupKey,
   exercises,
   canAdd,
   onAdd,
+  onUpdate,
   onDeleteExercise,
   busy,
 }: {
@@ -26,41 +125,28 @@ function GroupSection({
   exercises: PlanExercise[];
   canAdd: boolean;
   onAdd: (name: string) => void;
+  onUpdate: PlanExerciseRowUpdate;
   onDeleteExercise: (id: number) => void;
   busy: boolean;
 }) {
   const [name, setName] = useState('');
-  const label = labelFor(groupKey);
+  const label = muscleLabel(groupKey);
 
   return (
-    <div className="flex flex-col gap-2.5">
-      <div className="flex items-center gap-2">
-        <ThiingsAsset assetKey={muscleAssetKey(groupKey)} size={24} />
-        <h4 className="text-sm font-semibold">{label}</h4>
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-2.5">
+        <ThiingsAsset assetKey={muscleAssetKey(groupKey)} size={34} />
+        <h4 className="text-base font-semibold">{label}</h4>
       </div>
 
-      {exercises.length > 0 ? (
-        <ul className="flex flex-col gap-1.5">
-          {exercises.map((pe) => (
-            <li
-              key={pe.id}
-              className="flex items-center justify-between gap-2 rounded-lg bg-background/40 px-3 py-2 text-sm"
-            >
-              <span>{pe.exercise.name}</span>
-              <button
-                type="button"
-                onClick={() => onDeleteExercise(pe.id)}
-                aria-label={`Remover ${pe.exercise.name}`}
-                className="text-muted-foreground hover:text-status-broken"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
-                  <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-              </button>
-            </li>
-          ))}
-        </ul>
-      ) : null}
+      {exercises.map((pe) => (
+        <PlanExerciseRow
+          key={pe.id}
+          pe={pe}
+          onUpdate={onUpdate}
+          onDelete={onDeleteExercise}
+        />
+      ))}
 
       {canAdd ? (
         <div className="flex gap-2">
@@ -68,7 +154,7 @@ function GroupSection({
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder={`Exercício de ${label.toLowerCase()}`}
-            className="min-h-10 min-w-0 flex-1 rounded-lg border border-border bg-card px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/60"
+            className={cn(inputCls, 'min-w-0 flex-1')}
           />
           <button
             type="button"
@@ -77,9 +163,12 @@ function GroupSection({
               onAdd(name);
               setName('');
             }}
-            className="press min-h-10 shrink-0 cursor-pointer rounded-lg border border-border px-4 text-sm font-medium disabled:opacity-50"
+            aria-label="Adicionar exercício"
+            className="press flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground transition disabled:opacity-40"
           >
-            Add
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+            </svg>
           </button>
         </div>
       ) : null}
@@ -87,9 +176,20 @@ function GroupSection({
   );
 }
 
+type PlanExerciseRowUpdate = (
+  id: number,
+  patch: {
+    target_sets?: number | null;
+    target_reps?: string | null;
+    rest_seconds?: number | null;
+    technique?: string | null;
+  },
+) => void;
+
 function PlanCard({
   plan,
   onAddExercise,
+  onUpdate,
   onDeleteExercise,
   onTrain,
   onDelete,
@@ -102,34 +202,26 @@ function PlanCard({
     name: string,
     orderIdx: number,
   ) => void;
+  onUpdate: PlanExerciseRowUpdate;
   onDeleteExercise: (id: number) => void;
   onTrain: (plan: Plan) => void;
   onDelete: (planId: number) => void;
   busy: boolean;
 }) {
+  const present = Array.from(new Set(plan.plan_exercises.map(groupOf)));
   const groups = plan.muscle_groups.length
-    ? plan.muscle_groups
-    : Array.from(
-        new Set(
-          plan.plan_exercises
-            .map((pe) => pe.exercise.muscle_group)
-            .filter((g): g is string => !!g),
-        ),
-      );
-
-  // Exercises not covered by any listed group (e.g. legacy null) → "Outros".
-  const leftover = plan.plan_exercises.filter(
-    (pe) => !pe.exercise.muscle_group || !groups.includes(pe.exercise.muscle_group),
-  );
+    ? Array.from(new Set([...plan.muscle_groups, ...present.filter((g) => g !== 'outros')]))
+    : present;
+  const leftover = plan.plan_exercises.filter((pe) => !groups.includes(groupOf(pe)));
 
   return (
-    <div className="surface-2 flex flex-col gap-5 rounded-2xl p-5">
+    <div className="surface-2 rise flex flex-col gap-6 rounded-2xl p-5">
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-semibold">{plan.name}</h3>
+        <h3 className="text-lg font-semibold">{plan.name}</h3>
         <button
           type="button"
           onClick={() => onDelete(plan.id)}
-          className="text-xs text-muted-foreground hover:text-status-broken"
+          className="text-xs text-muted-foreground transition-colors hover:text-status-broken"
         >
           Excluir
         </button>
@@ -140,10 +232,9 @@ function PlanCard({
           key={g}
           groupKey={g}
           canAdd
-          exercises={plan.plan_exercises.filter(
-            (pe) => pe.exercise.muscle_group === g,
-          )}
+          exercises={plan.plan_exercises.filter((pe) => groupOf(pe) === g)}
           onAdd={(name) => onAddExercise(plan.id, g, name, plan.plan_exercises.length)}
+          onUpdate={onUpdate}
           onDeleteExercise={onDeleteExercise}
           busy={busy}
         />
@@ -155,6 +246,7 @@ function PlanCard({
           canAdd={false}
           exercises={leftover}
           onAdd={() => {}}
+          onUpdate={onUpdate}
           onDeleteExercise={onDeleteExercise}
           busy={busy}
         />
@@ -188,6 +280,7 @@ export function TrainingClient({
     createPlan,
     deletePlan,
     addExerciseToPlan,
+    updatePlanExercise,
     deletePlanExercise,
     startSession,
   } = useTraining(userId, timezone);
@@ -223,7 +316,12 @@ export function TrainingClient({
     const ex =
       existing ??
       (await createExercise.mutateAsync({ name: clean, muscleGroup: groupKey }));
-    await addExerciseToPlan.mutateAsync({ planId, exerciseId: ex.id, orderIdx });
+    await addExerciseToPlan.mutateAsync({
+      planId,
+      exerciseId: ex.id,
+      orderIdx,
+      muscleGroup: groupKey,
+    });
   };
 
   const activePlan = active
@@ -239,7 +337,7 @@ export function TrainingClient({
           </svg>
         </Link>
         <div className="flex items-center gap-2.5">
-          <ThiingsAsset assetKey="calories" size={28} />
+          <ThiingsAsset assetKey="calories" size={30} />
           <h1 className="text-xl font-semibold">Treino</h1>
         </div>
       </header>
@@ -263,7 +361,7 @@ export function TrainingClient({
               value={newPlan}
               onChange={(e) => setNewPlan(e.target.value)}
               placeholder="Nome do treino (ex.: PUSH)"
-              className="min-h-11 w-full rounded-lg border border-border bg-card px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/60"
+              className={cn(inputCls, 'min-h-11')}
             />
             <p className="text-xs font-medium text-muted-foreground">
               Grupos musculares deste treino
@@ -277,13 +375,13 @@ export function TrainingClient({
                     type="button"
                     onClick={() => toggleGroup(m.key)}
                     className={cn(
-                      'press inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium',
+                      'press inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
                       on
                         ? 'border-primary/50 bg-primary/15 text-primary'
                         : 'border-border text-muted-foreground',
                     )}
                   >
-                    <ThiingsAsset assetKey={muscleAssetKey(m.key)} size={16} />
+                    <ThiingsAsset assetKey={muscleAssetKey(m.key)} size={18} />
                     {m.label}
                   </button>
                 );
@@ -317,6 +415,7 @@ export function TrainingClient({
                 plan={plan}
                 busy={busy}
                 onAddExercise={addExercise}
+                onUpdate={(id, patch) => updatePlanExercise.mutate({ id, patch })}
                 onDeleteExercise={(id) => deletePlanExercise.mutate(id)}
                 onDelete={(id) => deletePlan.mutate(id)}
                 onTrain={async (p) => {
