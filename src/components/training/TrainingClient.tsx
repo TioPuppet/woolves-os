@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useQueryClient } from '@tanstack/react-query';
 import { useTraining } from '@/hooks/useTraining';
 import type { Plan, PlanExercise, ActiveSession } from '@/lib/training';
 import { MUSCLE_GROUPS, muscleAssetKey, muscleLabel } from '@/lib/muscles';
@@ -341,6 +342,16 @@ export function TrainingClient({
   const [newPlan, setNewPlan] = useState('');
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
   const [celebrate, setCelebrate] = useState<string | null>(null);
+  const qc = useQueryClient();
+
+  // Fully reset to a clean slate for a brand-new workout.
+  const resetToFresh = () => {
+    setActive(null);
+    setCelebrate(null);
+    qc.removeQueries({ queryKey: ['session-sets'] });
+    qc.invalidateQueries({ queryKey: ['plans'] });
+    qc.invalidateQueries({ queryKey: ['last-perf'] });
+  };
 
   const busy =
     createExercise.isPending ||
@@ -384,7 +395,7 @@ export function TrainingClient({
       <CompletionScreen
         name={name}
         planName={celebrate}
-        onTrainAgain={() => setCelebrate(null)}
+        onTrainAgain={resetToFresh}
       />
     );
   }
