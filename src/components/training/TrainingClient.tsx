@@ -275,10 +275,10 @@ function CompletionScreen({
   onTrainAgain: () => void;
 }) {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-9 px-8 pb-28 text-center">
-      <div className="flex flex-col items-center gap-6">
-        <ThiingsAsset assetKey="award" size={132} className="anim-pop" />
-        <div className="flex flex-col gap-3">
+    <main className="flex min-h-screen flex-col items-center justify-center gap-7 px-8 pb-24 pt-6 text-center">
+      <div className="flex flex-col items-center gap-5">
+        <ThiingsAsset assetKey="award" size={104} className="anim-pop" />
+        <div className="flex flex-col gap-2.5">
           <h1
             className="anim-rise text-balance text-2xl font-bold uppercase leading-tight tracking-tight"
             style={{ animationDelay: '120ms' }}
