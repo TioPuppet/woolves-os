@@ -11,7 +11,7 @@ export function calledName(
 
 /** Available treatments for onboarding/profile. Empty value = none. */
 export const TITLES: { value: string; label: string }[] = [
-  { value: '', label: 'Sem tratamento' },
+  { value: '', label: 'Nenhum' },
   { value: 'Sr.', label: 'Sr.' },
   { value: 'Sra.', label: 'Sra.' },
   { value: 'Dr.', label: 'Dr.' },

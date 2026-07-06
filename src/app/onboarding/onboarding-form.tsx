@@ -94,7 +94,7 @@ export function OnboardingForm() {
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           1 · Como quer ser chamado?
         </h2>
-        <div className="grid grid-cols-[7.5rem_1fr] gap-2">
+        <div className="grid grid-cols-[6.5rem_1fr] gap-2">
           <select
             name="title"
             value={title}

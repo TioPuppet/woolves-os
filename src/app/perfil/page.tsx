@@ -58,7 +58,7 @@ export default async function PerfilPage() {
         className="surface-2 flex flex-col gap-3 rounded-3xl p-4"
       >
         <p className="text-sm font-medium">Como quer ser chamado?</p>
-        <div className="grid grid-cols-[7.5rem_1fr] gap-2">
+        <div className="grid grid-cols-[6.5rem_1fr] gap-2">
           <select
             name="title"
             defaultValue={profile?.title ?? ''}
