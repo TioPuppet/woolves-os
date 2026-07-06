@@ -8,7 +8,6 @@ import { type TodayProfile, type TodaySnapshot } from '@/lib/today';
 import { levelFromExp } from '@/lib/exp-config';
 import { computeDayStatus, type DayStatus, DAY_STATUS_META } from '@/lib/day-status';
 import { localHour } from '@/lib/date';
-import { signOutAction } from '@/app/(auth)/actions';
 import { LevelHeader } from './LevelHeader';
 import { MissionCard } from './MissionCard';
 import { ModuleCard } from './ModuleCard';
@@ -75,18 +74,7 @@ export function TodayClient({
   const defaultMissionDone = snapshot.habitDone && (water == null || waterReached);
 
   return (
-    <main className="flex min-h-screen flex-col gap-6 px-5 py-10">
-      <div className="flex items-center justify-end">
-        <form action={signOutAction}>
-          <button
-            type="submit"
-            className="cursor-pointer text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
-          >
-            Sair
-          </button>
-        </form>
-      </div>
-
+    <main className="flex min-h-screen flex-col gap-6 px-5 pb-28 pt-10">
       <LevelHeader
         eyebrow="Hoje"
         title={headerTitle}

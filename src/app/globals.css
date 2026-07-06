@@ -97,6 +97,17 @@ a {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Hide native number spinners (clunky on the premium inputs). */
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
 /* Layered surfaces (Wolf Design System: #111 / #151 / #1A). */
 .surface-1 {
   background-color: hsl(240 8% 7%);

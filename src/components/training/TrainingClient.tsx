@@ -4,23 +4,32 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useTraining } from '@/hooks/useTraining';
 import type { Plan, ActiveSession } from '@/lib/training';
+import { MUSCLE_GROUPS, muscleAssetKey } from '@/lib/muscles';
 import { ThiingsAsset } from '@/components/ThiingsAsset';
 import { SessionView } from './SessionView';
 
 function PlanCard({
   plan,
   onAddExercise,
+  onDeleteExercise,
   onTrain,
   onDelete,
   busy,
 }: {
   plan: Plan;
-  onAddExercise: (planId: number, name: string, orderIdx: number) => void;
+  onAddExercise: (
+    planId: number,
+    name: string,
+    muscleGroup: string,
+    orderIdx: number,
+  ) => void;
+  onDeleteExercise: (id: number) => void;
   onTrain: (plan: Plan) => void;
   onDelete: (planId: number) => void;
   busy: boolean;
 }) {
   const [name, setName] = useState('');
+  const [muscle, setMuscle] = useState<string>('peito');
   return (
     <div className="surface-2 flex flex-col gap-3 rounded-2xl p-4">
       <div className="flex items-center justify-between">
@@ -37,8 +46,27 @@ function PlanCard({
       {plan.plan_exercises.length > 0 ? (
         <ul className="flex flex-col gap-1 text-sm">
           {plan.plan_exercises.map((pe) => (
-            <li key={pe.id} className="text-muted-foreground">
-              • {pe.exercise.name}
+            <li
+              key={pe.id}
+              className="flex items-center justify-between gap-2 text-muted-foreground"
+            >
+              <span className="flex items-center gap-2">
+                <ThiingsAsset
+                  assetKey={muscleAssetKey(pe.exercise.muscle_group)}
+                  size={20}
+                />
+                {pe.exercise.name}
+              </span>
+              <button
+                type="button"
+                onClick={() => onDeleteExercise(pe.id)}
+                aria-label={`Remover ${pe.exercise.name}`}
+                className="text-muted-foreground hover:text-status-broken"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </button>
             </li>
           ))}
         </ul>
@@ -46,18 +74,30 @@ function PlanCard({
         <p className="text-xs text-muted-foreground">Sem exercícios ainda.</p>
       )}
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Adicionar exercício"
-          className="min-h-10 flex-1 rounded-lg border border-border bg-card px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/60"
+          className="min-h-10 min-w-[8rem] flex-1 rounded-lg border border-border bg-card px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/60"
         />
+        <select
+          value={muscle}
+          onChange={(e) => setMuscle(e.target.value)}
+          aria-label="Grupo muscular"
+          className="min-h-10 rounded-lg border border-border bg-card px-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/60"
+        >
+          {MUSCLE_GROUPS.map((m) => (
+            <option key={m.key} value={m.key}>
+              {m.label}
+            </option>
+          ))}
+        </select>
         <button
           type="button"
           disabled={busy || !name.trim()}
           onClick={() => {
-            onAddExercise(plan.id, name, plan.plan_exercises.length);
+            onAddExercise(plan.id, name, muscle, plan.plan_exercises.length);
             setName('');
           }}
           className="press min-h-10 cursor-pointer rounded-lg border border-border px-3 text-sm font-medium disabled:opacity-50"
@@ -94,6 +134,7 @@ export function TrainingClient({
     createPlan,
     deletePlan,
     addExerciseToPlan,
+    deletePlanExercise,
     startSession,
   } = useTraining(userId, timezone);
 
@@ -111,6 +152,7 @@ export function TrainingClient({
   const addExerciseByName = async (
     planId: number,
     name: string,
+    muscleGroup: string,
     orderIdx: number,
   ) => {
     const clean = name.trim();
@@ -118,7 +160,9 @@ export function TrainingClient({
     const existing = exercises.find(
       (e) => e.name.toLowerCase() === clean.toLowerCase(),
     );
-    const ex = existing ?? (await createExercise.mutateAsync(clean));
+    const ex =
+      existing ??
+      (await createExercise.mutateAsync({ name: clean, muscleGroup }));
     await addExerciseToPlan.mutateAsync({ planId, exerciseId: ex.id, orderIdx });
   };
 
@@ -127,7 +171,7 @@ export function TrainingClient({
     : null;
 
   return (
-    <main className="flex min-h-screen flex-col gap-6 px-5 py-10">
+    <main className="flex min-h-screen flex-col gap-6 px-5 pb-28 pt-10">
       <header className="flex items-center gap-3">
         <Link
           href="/"
@@ -152,6 +196,7 @@ export function TrainingClient({
           <SessionView
             sessionId={active.id}
             exercises={activePlan.plan_exercises}
+            userId={userId}
             onComplete={() => setActive(null)}
           />
         </>
@@ -188,6 +233,7 @@ export function TrainingClient({
                 plan={plan}
                 busy={busy}
                 onAddExercise={addExerciseByName}
+                onDeleteExercise={(id) => deletePlanExercise.mutate(id)}
                 onDelete={(id) => deletePlan.mutate(id)}
                 onTrain={async (p) => {
                   const id = await startSession.mutateAsync(p.id);

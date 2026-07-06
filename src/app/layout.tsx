@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Providers } from './providers';
 import { ServiceWorkerRegister } from '@/components/ServiceWorkerRegister';
+import { BottomNav } from '@/components/BottomNav';
 
 export const metadata: Metadata = {
   title: 'Woolves Life OS',
@@ -37,6 +38,7 @@ export default function RootLayout({
               {children}
             </div>
           </div>
+          <BottomNav />
         </Providers>
         <ServiceWorkerRegister />
       </body>

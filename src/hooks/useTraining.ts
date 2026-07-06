@@ -24,11 +24,18 @@ export function useTraining(userId: string, timezone: string) {
   });
 
   const createExercise = useMutation({
-    mutationFn: async (name: string): Promise<Exercise> => {
+    mutationFn: async (v: {
+      name: string;
+      muscleGroup: string | null;
+    }): Promise<Exercise> => {
       const { data, error } = await supabase
         .from('exercises')
-        .insert({ user_id: userId, name: name.trim() })
-        .select('id, name')
+        .insert({
+          user_id: userId,
+          name: v.name.trim(),
+          muscle_group: v.muscleGroup,
+        })
+        .select('id, name, muscle_group')
         .single();
       if (error) throw error;
       return data as Exercise;
@@ -76,6 +83,17 @@ export function useTraining(userId: string, timezone: string) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['plans'] }),
   });
 
+  const deletePlanExercise = useMutation({
+    mutationFn: async (id: number) => {
+      const { error } = await supabase
+        .from('plan_exercises')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['plans'] }),
+  });
+
   const startSession = useMutation({
     mutationFn: async (planId: number | null): Promise<number> => {
       const { data, error } = await supabase
@@ -100,6 +118,7 @@ export function useTraining(userId: string, timezone: string) {
     createPlan,
     deletePlan,
     addExerciseToPlan,
+    deletePlanExercise,
     startSession,
   };
 }

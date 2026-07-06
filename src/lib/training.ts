@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 export interface Exercise {
   id: number;
   name: string;
+  muscle_group: string | null;
 }
 
 export interface PlanExercise {
@@ -31,6 +32,7 @@ export interface SetLog {
   reps: number | null;
   load_kg: number | null;
   rpe: number | null;
+  technique: string | null;
 }
 
 export interface LastPerf {
@@ -46,7 +48,7 @@ export async function fetchPlans(client: SupabaseClient): Promise<Plan[]> {
   const { data } = await client
     .from('workout_plans')
     .select(
-      'id, name, plan_exercises(id, exercise_id, order_idx, exercise:exercises(id, name))',
+      'id, name, plan_exercises(id, exercise_id, order_idx, exercise:exercises(id, name, muscle_group))',
     )
     .order('created_at', { ascending: true });
   const plans = (data ?? []) as unknown as Plan[];
@@ -62,7 +64,7 @@ export async function fetchExercises(
 ): Promise<Exercise[]> {
   const { data } = await client
     .from('exercises')
-    .select('id, name')
+    .select('id, name, muscle_group')
     .order('name');
   return (data ?? []) as Exercise[];
 }

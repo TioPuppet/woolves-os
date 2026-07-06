@@ -48,7 +48,18 @@ export type ThiingsAssetKey =
   | 'water'
   | 'weight'
   | 'wolf-obsidian'
-  | 'wolf';
+  | 'wolf'
+  // Muscle groups (M5+): recruited-muscle icon per exercise.
+  | 'peito'
+  | 'costas'
+  | 'ombro'
+  | 'biceps'
+  | 'triceps'
+  | 'perna'
+  | 'gluteo'
+  | 'abdomen'
+  | 'panturrilha'
+  | 'cardio';
 
 export interface ThiingsAssetEntry {
   key: ThiingsAssetKey;
@@ -104,6 +115,16 @@ export const THIINGS_REGISTRY: Record<ThiingsAssetKey, ThiingsAssetEntry> = {
   weight: entry('weight', 'Peso', 'Quick log de peso'),
   'wolf-obsidian': entry('wolf-obsidian', 'Lobo obsidiana', 'Variante escura do lobo'),
   wolf: entry('wolf', 'Lobo', 'Mascote / identidade'),
+  peito: entry('peito', 'Peito', 'Grupo muscular: peito'),
+  costas: entry('costas', 'Costas', 'Grupo muscular: costas'),
+  ombro: entry('ombro', 'Ombro', 'Grupo muscular: ombro'),
+  biceps: entry('biceps', 'Bíceps', 'Grupo muscular: bíceps'),
+  triceps: entry('triceps', 'Tríceps', 'Grupo muscular: tríceps'),
+  perna: entry('perna', 'Perna', 'Grupo muscular: perna'),
+  gluteo: entry('gluteo', 'Glúteo', 'Grupo muscular: glúteo'),
+  abdomen: entry('abdomen', 'Abdômen', 'Grupo muscular: abdômen'),
+  panturrilha: entry('panturrilha', 'Panturrilha', 'Grupo muscular: panturrilha'),
+  cardio: entry('cardio', 'Cardio', 'Cardio / condicionamento'),
 };
 
 /** All registered keys — useful for asset-completeness checks. */
