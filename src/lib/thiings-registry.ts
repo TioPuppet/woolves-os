@@ -56,6 +56,8 @@ export type ThiingsAssetKey =
   | 'biceps'
   | 'triceps'
   | 'perna'
+  | 'perna-quadriceps'
+  | 'perna-posterior'
   | 'gluteo'
   | 'abdomen'
   | 'panturrilha'
@@ -121,6 +123,8 @@ export const THIINGS_REGISTRY: Record<ThiingsAssetKey, ThiingsAssetEntry> = {
   biceps: entry('biceps', 'Bíceps', 'Grupo muscular: bíceps'),
   triceps: entry('triceps', 'Tríceps', 'Grupo muscular: tríceps'),
   perna: entry('perna', 'Perna', 'Grupo muscular: perna'),
+  'perna-quadriceps': entry('perna-quadriceps', 'Quadríceps', 'Grupo muscular: quadríceps'),
+  'perna-posterior': entry('perna-posterior', 'Posterior', 'Grupo muscular: posterior de coxa'),
   gluteo: entry('gluteo', 'Glúteo', 'Grupo muscular: glúteo'),
   abdomen: entry('abdomen', 'Abdômen', 'Grupo muscular: abdômen'),
   panturrilha: entry('panturrilha', 'Panturrilha', 'Grupo muscular: panturrilha'),
