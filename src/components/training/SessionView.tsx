@@ -279,11 +279,13 @@ export function SessionView({
   exercises,
   userId,
   onComplete,
+  onCancel,
 }: {
   sessionId: number;
   exercises: PlanExercise[];
   userId: string;
   onComplete: () => void;
+  onCancel: () => void;
 }) {
   const qc = useQueryClient();
   const supabase = getSupabaseBrowserClient();
@@ -383,7 +385,7 @@ export function SessionView({
         .eq('id', sessionId);
       if (error) throw error;
     },
-    onSuccess: () => onComplete(),
+    onSuccess: () => onCancel(),
   });
 
   const allSets = sessionSets.data ?? [];

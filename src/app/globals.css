@@ -108,6 +108,21 @@ input[type='number'] {
   appearance: textfield;
 }
 
+/* Elegant custom select: hide the native arrow, draw a refined chevron. */
+select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  padding-right: 2.25rem;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 0.85rem center;
+  background-size: 15px;
+}
+select::-ms-expand {
+  display: none;
+}
+
 /* Layered surfaces (Wolf Design System: #111 / #151 / #1A). */
 .surface-1 {
   background-color: hsl(240 8% 7%);

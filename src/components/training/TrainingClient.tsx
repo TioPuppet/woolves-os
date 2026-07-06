@@ -264,6 +264,40 @@ function PlanCard({
   );
 }
 
+function CompletionScreen({
+  planName,
+  onDone,
+}: {
+  planName: string;
+  onDone: () => void;
+}) {
+  return (
+    <main className="flex min-h-screen flex-col items-center justify-center gap-6 px-8 pb-28 text-center">
+      <div className="rise flex flex-col items-center gap-6">
+        <ThiingsAsset assetKey="award" size={128} />
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Excelente trabalho, Lobo!
+          </h1>
+          <p className="mt-2 leading-relaxed text-muted-foreground">
+            {planName} concluído. Agora descanse — amanhã a alcateia levanta de novo.
+          </p>
+        </div>
+        <span className="rounded-full bg-primary/15 px-4 py-2 text-sm font-semibold text-primary">
+          +50 EXP conquistado
+        </span>
+      </div>
+      <button
+        type="button"
+        onClick={onDone}
+        className="press min-h-12 w-full max-w-xs cursor-pointer rounded-2xl bg-primary text-sm font-semibold text-primary-foreground transition hover:opacity-90"
+      >
+        Voltar
+      </button>
+    </main>
+  );
+}
+
 export function TrainingClient({
   userId,
   timezone,
@@ -290,6 +324,7 @@ export function TrainingClient({
   );
   const [newPlan, setNewPlan] = useState('');
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
+  const [celebrate, setCelebrate] = useState<string | null>(null);
 
   const busy =
     createExercise.isPending ||
@@ -328,6 +363,12 @@ export function TrainingClient({
     ? plans.find((p) => p.id === active.planId) ?? null
     : null;
 
+  if (celebrate) {
+    return (
+      <CompletionScreen planName={celebrate} onDone={() => setCelebrate(null)} />
+    );
+  }
+
   return (
     <main className="flex min-h-screen flex-col gap-6 px-5 pb-28 pt-10">
       <header className="flex items-center gap-3">
@@ -351,7 +392,11 @@ export function TrainingClient({
             sessionId={active.id}
             exercises={activePlan.plan_exercises}
             userId={userId}
-            onComplete={() => setActive(null)}
+            onComplete={() => {
+              setCelebrate(activePlan.name);
+              setActive(null);
+            }}
+            onCancel={() => setActive(null)}
           />
         </>
       ) : (
