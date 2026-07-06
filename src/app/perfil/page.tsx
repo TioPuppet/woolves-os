@@ -1,7 +1,9 @@
 import { redirect } from 'next/navigation';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { signOutAction } from '@/app/(auth)/actions';
+import { updateProfileName } from './actions';
 import { levelFromExp, levelAssetKey } from '@/lib/exp-config';
+import { calledName, TITLES } from '@/lib/greeting';
 import { ThiingsAsset } from '@/components/ThiingsAsset';
 
 export default async function PerfilPage() {
@@ -14,13 +16,14 @@ export default async function PerfilPage() {
   const { data: profile } = await supabase
     .from('profiles')
     .select(
-      'display_name, required_habit, goal_kcal, goal_protein_g, goal_water_ml',
+      'title, display_name, required_habit, goal_kcal, goal_protein_g, goal_water_ml',
     )
     .eq('id', user.id)
     .maybeSingle();
 
   const { data: expTotal } = await supabase.rpc('get_exp_total');
   const level = levelFromExp(typeof expTotal === 'number' ? expTotal : 0);
+  const called = calledName(profile?.title, profile?.display_name);
 
   const Row = ({ label, value }: { label: string; value: string }) => (
     <div className="flex items-center justify-between border-b border-white/5 py-3 last:border-0">
@@ -42,13 +45,46 @@ export default async function PerfilPage() {
         </div>
         <div>
           <p className="text-base font-semibold">
-            Nível {level.level} · {level.title}
+            {called === 'Lobo' ? user.email : called}
           </p>
           <p className="text-sm text-muted-foreground">
-            {user.email}
+            Nível {level.level} · {level.title}
           </p>
         </div>
       </section>
+
+      <form
+        action={updateProfileName}
+        className="surface-2 flex flex-col gap-3 rounded-3xl p-4"
+      >
+        <p className="text-sm font-medium">Como quer ser chamado?</p>
+        <div className="grid grid-cols-[7.5rem_1fr] gap-2">
+          <select
+            name="title"
+            defaultValue={profile?.title ?? ''}
+            aria-label="Tratamento"
+            className="min-h-11 rounded-lg border border-border bg-card px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/60"
+          >
+            {TITLES.map((t) => (
+              <option key={t.value} value={t.value}>
+                {t.label}
+              </option>
+            ))}
+          </select>
+          <input
+            name="display_name"
+            defaultValue={profile?.display_name ?? ''}
+            placeholder="Seu nome"
+            className="min-h-11 rounded-lg border border-border bg-card px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/60"
+          />
+        </div>
+        <button
+          type="submit"
+          className="press min-h-11 w-full cursor-pointer rounded-xl bg-primary text-sm font-semibold text-primary-foreground"
+        >
+          Salvar
+        </button>
+      </form>
 
       <section className="surface-2 rounded-3xl px-4">
         <Row label="E-mail" value={user.email ?? '—'} />

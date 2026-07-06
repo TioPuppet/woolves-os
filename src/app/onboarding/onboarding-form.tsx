@@ -15,6 +15,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Field } from '@/components/ui/field';
+import { TITLES } from '@/lib/greeting';
 
 const initial: OnboardingState = {};
 
@@ -40,6 +41,10 @@ export function OnboardingForm() {
     completeOnboardingAction,
     initial,
   );
+
+  // How the user wants to be addressed.
+  const [title, setTitle] = useState('Sr.');
+  const [displayName, setDisplayName] = useState('');
 
   // Body inputs drive the live goal preview.
   const [sex, setSex] = useState<Sex>('male');
@@ -87,7 +92,39 @@ export function OnboardingForm() {
     <form action={formAction} className="flex flex-col gap-6">
       <section className="flex flex-col gap-4">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          1 · Seu corpo
+          1 · Como quer ser chamado?
+        </h2>
+        <div className="grid grid-cols-[7.5rem_1fr] gap-2">
+          <select
+            name="title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            aria-label="Tratamento"
+            className="min-h-11 rounded-md border border-border bg-card px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/60"
+          >
+            {TITLES.map((t) => (
+              <option key={t.value} value={t.value}>
+                {t.label}
+              </option>
+            ))}
+          </select>
+          <Input
+            name="display_name"
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            placeholder="Seu nome"
+            required
+          />
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Ex.: {title ? `${title} ` : ''}
+          {displayName.trim().split(/\s+/)[0] || 'Cleomárcio'}
+        </p>
+      </section>
+
+      <section className="flex flex-col gap-4">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          2 · Seu corpo
         </h2>
 
         <Field label="Sexo biológico">
@@ -165,7 +202,7 @@ export function OnboardingForm() {
       <section className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            2 · Suas metas
+            3 · Suas metas
           </h2>
           <button
             type="button"
@@ -239,7 +276,7 @@ export function OnboardingForm() {
 
       <section className="flex flex-col gap-4">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          3 · Hábito obrigatório
+          4 · Hábito obrigatório
         </h2>
         <Field
           label="Um hábito inegociável por dia"

@@ -18,7 +18,7 @@ export default async function TodayPage() {
   const { data: p } = await supabase
     .from('profiles')
     .select(
-      'display_name, timezone, required_habit, goal_water_ml, goal_protein_g, goal_kcal, goal_spend_limit_brl',
+      'title, display_name, timezone, required_habit, goal_water_ml, goal_protein_g, goal_kcal, goal_spend_limit_brl',
     )
     .eq('id', user.id)
     .maybeSingle();
@@ -26,7 +26,8 @@ export default async function TodayPage() {
   const timezone = p?.timezone ?? 'America/Sao_Paulo';
 
   const profile: TodayProfile = {
-    name: p?.display_name ?? user.email?.split('@')[0] ?? 'Lobo',
+    title: p?.title ?? null,
+    displayName: p?.display_name ?? null,
     timezone,
     requiredHabit: p?.required_habit ?? null,
     goalWaterMl: p?.goal_water_ml ?? null,

@@ -28,8 +28,12 @@ export async function completeOnboardingAction(
   const sex = String(formData.get('sex') ?? '');
   const activity = String(formData.get('activity_level') ?? '');
   const requiredHabit = String(formData.get('required_habit') ?? '').trim();
+  const displayName = String(formData.get('display_name') ?? '').trim();
+  const title = String(formData.get('title') ?? '').trim();
 
   const payload = {
+    display_name: displayName || null,
+    title: title || null,
     sex: sex === 'male' || sex === 'female' ? sex : null,
     birth_date: String(formData.get('birth_date') ?? '') || null,
     height_cm: toNum(formData.get('height_cm')),

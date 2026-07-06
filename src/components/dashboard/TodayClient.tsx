@@ -8,6 +8,7 @@ import { type TodayProfile, type TodaySnapshot } from '@/lib/today';
 import { levelFromExp } from '@/lib/exp-config';
 import { computeDayStatus, type DayStatus, DAY_STATUS_META } from '@/lib/day-status';
 import { localHour } from '@/lib/date';
+import { calledName } from '@/lib/greeting';
 import { LevelHeader } from './LevelHeader';
 import { MissionCard } from './MissionCard';
 import { ModuleCard } from './ModuleCard';
@@ -45,11 +46,9 @@ export function TodayClient({
   const hour = localHour(profile.timezone);
   const timeGreeting =
     hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
-  // Only treat as a real name if it looks like one (display_name), not an email prefix.
-  const raw = profile.name.trim();
-  const looksLikeName = /\s/.test(raw) || /[A-ZÀ-Ý]/.test(raw);
-  const firstName = looksLikeName ? raw.split(/\s+/)[0] : null;
-  const headerTitle = firstName ? `${timeGreeting}, ${firstName}` : timeGreeting;
+  const called = calledName(profile.title, profile.displayName);
+  const headerTitle =
+    called === 'Lobo' ? timeGreeting : `${timeGreeting}, ${called}`;
 
   const status: DayStatus =
     snapshot.checkinStatus ??

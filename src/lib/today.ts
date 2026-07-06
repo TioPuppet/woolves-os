@@ -16,7 +16,8 @@ export interface TodaySnapshot {
 
 /** Static profile context passed from the server (doesn't change intra-day). */
 export interface TodayProfile {
-  name: string;
+  title: string | null;
+  displayName: string | null;
   timezone: string;
   requiredHabit: string | null;
   goalWaterMl: number | null;
