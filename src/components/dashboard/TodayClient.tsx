@@ -11,7 +11,6 @@ import { localHour } from '@/lib/date';
 import { calledName } from '@/lib/greeting';
 import { LevelHeader } from './LevelHeader';
 import { MissionCard } from './MissionCard';
-import { ModuleCard } from './ModuleCard';
 import { WaterCard } from './WaterCard';
 import { HabitCard } from './HabitCard';
 import { NutritionCard } from './NutritionCard';
@@ -133,7 +132,18 @@ export function TodayClient({
             Registrar
           </span>
         </Link>
-        <ModuleCard assetKey="sleep" title="Sono" />
+        <Link
+          href="/sono"
+          className="press surface-2 flex flex-col gap-3 rounded-2xl p-4"
+        >
+          <div className="flex items-center gap-2.5">
+            <ThiingsAsset assetKey="sleep" size={26} />
+            <span className="text-sm font-medium">Sono</span>
+          </div>
+          <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">
+            Registrar
+          </span>
+        </Link>
       </section>
 
       {checkedIn ? (

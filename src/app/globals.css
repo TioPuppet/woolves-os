@@ -148,6 +148,18 @@ select::-ms-expand {
   box-shadow: inset 0 0 12px -4px hsl(46 67% 47% / 0.4);
 }
 
+/* Night ambience for the sleep screen (Calm / Pillow — indigo + purple glow). */
+.night {
+  background:
+    radial-gradient(
+      120% 80% at 50% -10%,
+      hsl(252 96% 68% / 0.22),
+      transparent 55%
+    ),
+    radial-gradient(90% 55% at 85% 6%, hsl(211 90% 58% / 0.1), transparent 55%),
+    hsl(248 32% 6%);
+}
+
 /* Frosted glass surface (Cinema Mobile direction). */
 .glass {
   background: hsl(var(--card) / 0.72);
