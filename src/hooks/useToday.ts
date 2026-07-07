@@ -118,6 +118,45 @@ export function useToday(timezone: string, initial: TodaySnapshot) {
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
   });
 
+  const setMission = useMutation({
+    mutationFn: async (text: string) => {
+      const { error } = await supabase.rpc('set_daily_mission', { p_text: text });
+      if (error) throw error;
+    },
+    onMutate: async (text: string) => {
+      await qc.cancelQueries({ queryKey: KEY });
+      const prev = qc.getQueryData<TodaySnapshot>(KEY);
+      if (prev) {
+        qc.setQueryData<TodaySnapshot>(KEY, {
+          ...prev,
+          missionText: text.trim() || null,
+        });
+      }
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx?.prev) qc.setQueryData(KEY, ctx.prev);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: KEY }),
+  });
+
+  const setMissionDone = useMutation({
+    mutationFn: async (done: boolean) => {
+      const { error } = await supabase.rpc('set_mission_done', { p_done: done });
+      if (error) throw error;
+    },
+    onMutate: async (done: boolean) => {
+      await qc.cancelQueries({ queryKey: KEY });
+      const prev = qc.getQueryData<TodaySnapshot>(KEY);
+      if (prev) qc.setQueryData<TodaySnapshot>(KEY, { ...prev, missionDone: done });
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx?.prev) qc.setQueryData(KEY, ctx.prev);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: KEY }),
+  });
+
   const submitCheckin = useMutation({
     mutationFn: async (v: {
       mood: number;
@@ -140,6 +179,8 @@ export function useToday(timezone: string, initial: TodaySnapshot) {
     toggleHabit,
     logFood,
     logWeight,
+    setMission,
+    setMissionDone,
     submitCheckin,
   };
 }

@@ -1,8 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { ThiingsAsset } from '@/components/ThiingsAsset';
 import { useToday } from '@/hooks/useToday';
 import { type TodayProfile, type TodaySnapshot } from '@/lib/today';
 import { levelFromExp } from '@/lib/exp-config';
@@ -26,8 +24,16 @@ export function TodayClient({
   profile: TodayProfile;
   initial: TodaySnapshot;
 }) {
-  const { snapshot, logWater, toggleHabit, logFood, logWeight, submitCheckin } =
-    useToday(profile.timezone, initial);
+  const {
+    snapshot,
+    logWater,
+    toggleHabit,
+    logFood,
+    logWeight,
+    setMission,
+    setMissionDone,
+    submitCheckin,
+  } = useToday(profile.timezone, initial);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [foodOpen, setFoodOpen] = useState(false);
 
@@ -69,18 +75,18 @@ export function TodayClient({
   const water = profile.goalWaterMl;
   const proteinGoal = profile.goalProteinG;
 
-  // Composite mission: habit + water + protein (whatever is configured).
+  // Composite suggestion used to prefill the editable mission when it's empty.
   const targets: string[] = [];
-  if (habit) targets.push(`cumpra “${habit}”`);
-  if (water) targets.push(`beba ${water}ml de água`);
-  if (proteinGoal) targets.push(`bata ${proteinGoal}g de proteína`);
-  const mission = targets.length
-    ? `Hoje: ${targets.join(' · ')}.`
-    : 'Defina seu hábito nas configurações para receber a missão do dia.';
+  if (habit) targets.push(`cumprir “${habit}”`);
+  if (water) targets.push(`beber ${water}ml de água`);
+  if (proteinGoal) targets.push(`bater ${proteinGoal}g de proteína`);
+  const suggestion = targets.length ? targets.join(', ') : '';
 
   const waterReached = water == null || snapshot.waterMl >= water;
   const proteinReached = proteinGoal == null || snapshot.proteinToday >= proteinGoal;
-  const defaultMissionDone = snapshot.habitDone && waterReached && proteinReached;
+  const defaultMissionDone = snapshot.missionText
+    ? snapshot.missionDone
+    : snapshot.habitDone && waterReached && proteinReached;
 
   return (
     <main className="flex min-h-screen flex-col gap-6 px-5 pb-28 pt-10">
@@ -91,22 +97,29 @@ export function TodayClient({
         streak={snapshot.streak}
       />
 
-      <MissionCard mission={mission} status={status} />
+      {/* Hábito obrigatório — logo abaixo do EXP */}
+      <HabitCard
+        habit={habit}
+        done={snapshot.habitDone}
+        onToggle={(done) => toggleHabit.mutate(done)}
+        pending={toggleHabit.isPending}
+      />
 
-      <AiCoachCard />
+      {/* Missão do dia — editável */}
+      <MissionCard
+        text={snapshot.missionText}
+        suggestion={suggestion}
+        done={snapshot.missionDone}
+        status={status}
+        onSave={(t) => setMission.mutate(t)}
+        onToggleDone={(d) => setMissionDone.mutate(d)}
+      />
 
       <WaterCard
         waterMl={snapshot.waterMl}
         goalMl={water}
         onAdd={(ml) => logWater.mutate(ml)}
         pending={logWater.isPending}
-      />
-
-      <HabitCard
-        habit={habit}
-        done={snapshot.habitDone}
-        onToggle={(done) => toggleHabit.mutate(done)}
-        pending={toggleHabit.isPending}
       />
 
       <NutritionCard
@@ -123,45 +136,6 @@ export function TodayClient({
         onLog={(kg) => logWeight.mutate(kg)}
         pending={logWeight.isPending}
       />
-
-      <section className="grid grid-cols-2 gap-3">
-        <Link
-          href="/treino"
-          className="press surface-2 flex flex-col gap-3 rounded-2xl p-4"
-        >
-          <div className="flex items-center gap-2.5">
-            <ThiingsAsset assetKey="calories" size={26} />
-            <span className="text-sm font-medium">Treino</span>
-          </div>
-          <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">
-            Registrar
-          </span>
-        </Link>
-        <Link
-          href="/financas"
-          className="press surface-2 flex flex-col gap-3 rounded-2xl p-4"
-        >
-          <div className="flex items-center gap-2.5">
-            <ThiingsAsset assetKey="finances" size={26} />
-            <span className="text-sm font-medium">Finanças</span>
-          </div>
-          <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">
-            Registrar
-          </span>
-        </Link>
-        <Link
-          href="/sono"
-          className="press surface-2 flex flex-col gap-3 rounded-2xl p-4"
-        >
-          <div className="flex items-center gap-2.5">
-            <ThiingsAsset assetKey="sleep" size={26} />
-            <span className="text-sm font-medium">Sono</span>
-          </div>
-          <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">
-            Registrar
-          </span>
-        </Link>
-      </section>
 
       {checkedIn ? (
         <div className="rounded-2xl border border-status-completed/30 bg-status-completed/10 p-4 text-center">
@@ -181,6 +155,9 @@ export function TodayClient({
           Check-in da noite
         </button>
       )}
+
+      {/* Woolves IA — no fim da página */}
+      <AiCoachCard />
 
       <FoodSearchSheet
         open={foodOpen}

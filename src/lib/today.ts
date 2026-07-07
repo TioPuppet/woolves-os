@@ -15,6 +15,8 @@ export interface TodaySnapshot {
   spentToday: number;
   latestWeight: number | null;
   prevWeight: number | null;
+  missionText: string | null;
+  missionDone: boolean;
 }
 
 /** Static profile context passed from the server (doesn't change intra-day). */
@@ -36,7 +38,7 @@ export async function fetchTodaySnapshot(
 ): Promise<TodaySnapshot> {
   const date = localDayString(timezone);
 
-  const [water, habit, checkin, exp, profile, food, spend, weight] =
+  const [water, habit, checkin, exp, profile, food, spend, weight, mission] =
     await Promise.all([
     client.from('water_logs').select('ml').eq('ref_date', date),
     client
@@ -63,6 +65,11 @@ export async function fetchTodaySnapshot(
       .select('kg')
       .order('created_at', { ascending: false })
       .limit(2),
+    client
+      .from('daily_missions')
+      .select('text, done')
+      .eq('ref_date', date)
+      .maybeSingle(),
   ]);
 
   const waterMl = (water.data ?? []).reduce(
@@ -88,6 +95,8 @@ export async function fetchTodaySnapshot(
     spentToday: Math.round(spentToday * 100) / 100,
     latestWeight: weightRows[0]?.kg ?? null,
     prevWeight: weightRows[1]?.kg ?? null,
+    missionText: (mission.data?.text as string | undefined)?.trim() || null,
+    missionDone: mission.data?.done === true,
   };
 }
 
