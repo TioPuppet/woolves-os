@@ -22,6 +22,7 @@ const HUB: { href: string; label: string; icon: ThiingsAssetKey }[] = [
   { href: '/relatorio', label: 'Relatório', icon: 'ai' },
   { href: '/', label: 'Hoje', icon: 'today' },
   { href: '/treino', label: 'Treino', icon: 'calories' },
+  { href: '/nutricao', label: 'Nutrição', icon: 'alimentacao' },
   { href: '/financas', label: 'Finanças', icon: 'finances' },
   { href: '/sono', label: 'Sono', icon: 'sleep' },
   { href: '/notas', label: 'Espaço', icon: 'journal' },

@@ -11,10 +11,8 @@ import { LevelHeader } from './LevelHeader';
 import { MissionCard } from './MissionCard';
 import { WaterCard } from './WaterCard';
 import { HabitCard } from './HabitCard';
-import { NutritionCard } from './NutritionCard';
 import { WeightCard } from './WeightCard';
 import { AiCoachCard } from './AiCoachCard';
-import { FoodSearchSheet } from './FoodSearchSheet';
 import { CheckinSheet } from './CheckinSheet';
 
 export function TodayClient({
@@ -27,23 +25,18 @@ export function TodayClient({
   const {
     snapshot,
     logWater,
+    removeWater,
     toggleHabit,
-    logFood,
     logWeight,
     setMission,
     setMissionDone,
     submitCheckin,
   } = useToday(profile.timezone, initial);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [foodOpen, setFoodOpen] = useState(false);
 
   useEffect(() => {
     if (submitCheckin.isSuccess) setSheetOpen(false);
   }, [submitCheckin.isSuccess]);
-
-  useEffect(() => {
-    if (logFood.isSuccess) setFoodOpen(false);
-  }, [logFood.isSuccess]);
 
   const level = levelFromExp(snapshot.expTotal);
   const checkedIn = snapshot.checkinStatus != null;
@@ -119,15 +112,8 @@ export function TodayClient({
         waterMl={snapshot.waterMl}
         goalMl={water}
         onAdd={(ml) => logWater.mutate(ml)}
-        pending={logWater.isPending}
-      />
-
-      <NutritionCard
-        kcalToday={snapshot.kcalToday}
-        proteinToday={snapshot.proteinToday}
-        goalKcal={profile.goalKcal}
-        goalProteinG={profile.goalProteinG}
-        onOpen={() => setFoodOpen(true)}
+        onRemove={(ml) => removeWater.mutate(ml)}
+        pending={logWater.isPending || removeWater.isPending}
       />
 
       <WeightCard
@@ -158,13 +144,6 @@ export function TodayClient({
 
       {/* Woolves IA — no fim da página */}
       <AiCoachCard />
-
-      <FoodSearchSheet
-        open={foodOpen}
-        onClose={() => setFoodOpen(false)}
-        onLog={(foodId, grams) => logFood.mutate({ foodId, grams })}
-        pending={logFood.isPending}
-      />
 
       <CheckinSheet
         open={sheetOpen}

@@ -74,6 +74,28 @@ export function useToday(timezone: string, initial: TodaySnapshot) {
     onSettled: () => qc.invalidateQueries({ queryKey: KEY }),
   });
 
+  const removeWater = useMutation({
+    mutationFn: async (ml: number) => {
+      const { error } = await supabase.rpc('remove_water', { p_ml: ml });
+      if (error) throw error;
+    },
+    onMutate: async (ml: number) => {
+      await qc.cancelQueries({ queryKey: KEY });
+      const prev = qc.getQueryData<TodaySnapshot>(KEY);
+      if (prev) {
+        qc.setQueryData<TodaySnapshot>(KEY, {
+          ...prev,
+          waterMl: Math.max(0, prev.waterMl - ml),
+        });
+      }
+      return { prev };
+    },
+    onError: (_e, _ml, ctx) => {
+      if (ctx?.prev) qc.setQueryData(KEY, ctx.prev);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: KEY }),
+  });
+
   const toggleHabit = useMutation({
     mutationFn: async (done: boolean) => {
       if (!navigator.onLine) {
@@ -176,6 +198,7 @@ export function useToday(timezone: string, initial: TodaySnapshot) {
   return {
     snapshot: query.data ?? initial,
     logWater,
+    removeWater,
     toggleHabit,
     logFood,
     logWeight,
