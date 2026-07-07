@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ThiingsAsset } from '@/components/ThiingsAsset';
 import { type ThiingsAssetKey } from '@/lib/thiings-registry';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 
 const HIDDEN = ['/login', '/signup', '/onboarding'];
@@ -26,6 +27,13 @@ const HUB: { href: string; label: string; icon: ThiingsAssetKey }[] = [
   { href: '/notas', label: 'Espaço', icon: 'journal' },
   { href: '/perfil', label: 'Perfil', icon: 'settings' },
 ];
+
+// Entrada exclusiva de perfis clínicos (gate por is_clinician).
+const CLINICA_ITEM: { href: string; label: string; icon: ThiingsAssetKey } = {
+  href: '/clinica',
+  label: 'Clínica',
+  icon: 'saude',
+};
 
 function Tab({
   href,
@@ -55,6 +63,30 @@ function Tab({
 export function BottomNav() {
   const pathname = usePathname();
   const [hubOpen, setHubOpen] = useState(false);
+  const [isClinician, setIsClinician] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    const supabase = getSupabaseBrowserClient();
+    (async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from('profiles')
+        .select('is_clinician')
+        .eq('id', user.id)
+        .single();
+      if (alive && data?.is_clinician) setIsClinician(true);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const hubItems = isClinician ? [...HUB, CLINICA_ITEM] : HUB;
+
   if (HIDDEN.includes(pathname)) return null;
 
   const isActive = (href: string) =>
@@ -75,7 +107,7 @@ export function BottomNav() {
               Woolves IA
             </p>
             <div className="grid grid-cols-3 gap-3">
-              {HUB.map((item, i) => (
+              {hubItems.map((item, i) => (
                 <Link
                   key={item.label}
                   href={item.href}
