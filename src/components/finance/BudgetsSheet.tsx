@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { EXPENSE_CATEGORIES, categoryColor, type Budget } from '@/lib/finance';
 import { ThiingsAsset } from '@/components/ThiingsAsset';
+import { CurrencyInput } from './CurrencyInput';
 
 const brl = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -75,8 +76,8 @@ function BudgetRow({
   onSet: (category: string, value: number) => void;
   onDelete: (category: string) => void;
 }) {
-  const [val, setVal] = useState(initial != null ? String(initial) : '');
-  const limit = initial;
+  const [draft, setDraft] = useState<number | null>(initial);
+  const limit = draft;
   const pct = limit ? Math.min(100, Math.round((spent / limit) * 100)) : 0;
   const over = limit != null && spent > limit;
 
@@ -87,20 +88,18 @@ function BudgetRow({
           <ThiingsAsset assetKey={icon} size={18} />
         </span>
         <span className="min-w-0 flex-1 text-sm font-medium">{label}</span>
-        <input
-          inputMode="decimal"
-          value={val}
-          onChange={(e) => setVal(e.target.value)}
+        <CurrencyInput
+          value={draft}
+          onValueChange={setDraft}
           onBlur={() => {
-            const n = Number(val);
-            if (val.trim() === '') {
+            if (draft == null) {
               if (initial != null) onDelete(catKey);
-            } else if (n > 0 && n !== initial) {
-              onSet(catKey, n);
+            } else if (draft > 0 && draft !== initial) {
+              onSet(catKey, draft);
             }
           }}
           placeholder="Teto R$"
-          className="min-h-9 w-24 shrink-0 rounded-lg border border-border bg-card px-2 text-right text-sm focus:outline-none focus:ring-2 focus:ring-primary/60"
+          className="min-h-9 w-28 shrink-0 rounded-lg border border-border bg-card px-2 text-right text-sm focus:outline-none focus:ring-2 focus:ring-primary/60"
         />
       </div>
       {limit != null ? (

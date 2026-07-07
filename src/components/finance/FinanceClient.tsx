@@ -23,6 +23,7 @@ import { localDayString } from '@/lib/date';
 import { ThiingsAsset } from '@/components/ThiingsAsset';
 import { cn } from '@/lib/utils';
 import { CountUp } from './CountUp';
+import { CurrencyInput } from './CurrencyInput';
 import { Donut } from './Donut';
 import { TrendChart } from './TrendChart';
 import { BudgetsSheet } from './BudgetsSheet';
@@ -47,7 +48,7 @@ export function FinanceClient({
 
   const today = localDayString(timezone);
   const [type, setType] = useState<'expense' | 'income'>('expense');
-  const [amount, setAmount] = useState('');
+  const [amount, setAmount] = useState<number | null>(null);
   const [category, setCategory] = useState('alimentacao');
   const [note, setNote] = useState('');
   const [date, setDate] = useState(today);
@@ -71,7 +72,7 @@ export function FinanceClient({
     .filter((t) => t.type === 'expense' && t.ref_date === today)
     .reduce((s, t) => s + Number(t.amount_brl), 0);
 
-  const canAdd = Number(amount) > 0;
+  const canAdd = (amount ?? 0) > 0;
 
   return (
     <main className="flex min-h-screen flex-col gap-5 px-5 pb-28 pt-10">
@@ -200,7 +201,7 @@ export function FinanceClient({
           ))}
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Valor (R$)" className="min-h-11 rounded-lg border border-border bg-card px-3 text-base font-semibold focus:outline-none focus:ring-2 focus:ring-primary/60" />
+          <CurrencyInput value={amount} onValueChange={setAmount} placeholder="R$ 0,00" className="min-h-11 rounded-lg border border-border bg-card px-3 text-base font-semibold focus:outline-none focus:ring-2 focus:ring-primary/60" />
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="min-h-11 rounded-lg border border-border bg-card px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/60" />
         </div>
         <div className="flex flex-wrap gap-2">
@@ -216,8 +217,8 @@ export function FinanceClient({
           type="button"
           disabled={!canAdd || fin.logTransaction.isPending}
           onClick={() => {
-            fin.logTransaction.mutate({ type, amount: Number(amount), category, note: note.trim() || null, refDate: date });
-            setAmount('');
+            fin.logTransaction.mutate({ type, amount: amount ?? 0, category, note: note.trim() || null, refDate: date });
+            setAmount(null);
             setNote('');
           }}
           className="press min-h-11 rounded-xl bg-primary text-sm font-semibold text-primary-foreground disabled:opacity-50"

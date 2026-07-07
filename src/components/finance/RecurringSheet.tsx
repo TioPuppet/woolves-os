@@ -10,6 +10,7 @@ import {
 import { ThiingsAsset } from '@/components/ThiingsAsset';
 import type { RecurringDraft } from '@/hooks/useFinance';
 import { cn } from '@/lib/utils';
+import { CurrencyInput } from './CurrencyInput';
 
 const brl = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -35,7 +36,7 @@ export function RecurringSheet({
   onClose: () => void;
 }) {
   const [type, setType] = useState<'expense' | 'income'>('expense');
-  const [amount, setAmount] = useState('');
+  const [amount, setAmount] = useState<number | null>(null);
   const [category, setCategory] = useState('moradia');
   const [note, setNote] = useState('');
   const [day, setDay] = useState('5');
@@ -104,7 +105,7 @@ export function RecurringSheet({
             ))}
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Valor R$" className={field} />
+            <CurrencyInput value={amount} onValueChange={setAmount} placeholder="R$ 0,00" className={field} />
             <input inputMode="numeric" value={day} onChange={(e) => setDay(e.target.value)} placeholder="Dia do mês" className={field} />
           </div>
           <select value={category} onChange={(e) => setCategory(e.target.value)} className={cn(field, 'text-foreground')}>
@@ -113,17 +114,17 @@ export function RecurringSheet({
           <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Descrição (ex.: Aluguel)" className={field} />
           <button
             type="button"
-            disabled={!(Number(amount) > 0)}
+            disabled={!((amount ?? 0) > 0)}
             onClick={() => {
               onAdd({
                 type,
-                amount_brl: Number(amount),
+                amount_brl: amount ?? 0,
                 category,
                 note: note.trim() || null,
                 day_of_month: Math.min(31, Math.max(1, Number(day) || 1)),
                 active: true,
               });
-              setAmount('');
+              setAmount(null);
               setNote('');
             }}
             className="press min-h-10 rounded-lg bg-primary text-sm font-semibold text-primary-foreground disabled:opacity-40"

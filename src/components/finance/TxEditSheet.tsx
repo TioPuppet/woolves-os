@@ -8,6 +8,7 @@ import {
 } from '@/lib/finance';
 import type { TxPatch } from '@/hooks/useFinance';
 import { cn } from '@/lib/utils';
+import { CurrencyInput } from './CurrencyInput';
 
 export function TxEditSheet({
   tx,
@@ -21,7 +22,7 @@ export function TxEditSheet({
   onClose: () => void;
 }) {
   const [type, setType] = useState<'expense' | 'income'>(tx.type);
-  const [amount, setAmount] = useState(String(tx.amount_brl));
+  const [amount, setAmount] = useState<number | null>(Number(tx.amount_brl));
   const [category, setCategory] = useState(tx.category ?? 'outros');
   const [note, setNote] = useState(tx.note ?? '');
   const [date, setDate] = useState(tx.ref_date);
@@ -49,7 +50,7 @@ export function TxEditSheet({
             </button>
           ))}
         </div>
-        <input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Valor R$" className={field} />
+        <CurrencyInput value={amount} onValueChange={setAmount} className={field} />
         <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={field} />
         <select value={category} onChange={(e) => setCategory(e.target.value)} className={cn(field, 'text-foreground')}>
           {cats.map((c) => (<option key={c.key} value={c.key}>{c.label}</option>))}
@@ -62,11 +63,11 @@ export function TxEditSheet({
           </button>
           <button
             type="button"
-            disabled={!(Number(amount) > 0)}
+            disabled={!((amount ?? 0) > 0)}
             onClick={() =>
               onSave({
                 type,
-                amount_brl: Number(amount),
+                amount_brl: amount ?? 0,
                 category,
                 note: note.trim() || null,
                 ref_date: date,
