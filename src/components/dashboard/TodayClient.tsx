@@ -14,6 +14,7 @@ import { MissionCard } from './MissionCard';
 import { WaterCard } from './WaterCard';
 import { HabitCard } from './HabitCard';
 import { NutritionCard } from './NutritionCard';
+import { WeightCard } from './WeightCard';
 import { FoodSearchSheet } from './FoodSearchSheet';
 import { CheckinSheet } from './CheckinSheet';
 
@@ -24,10 +25,8 @@ export function TodayClient({
   profile: TodayProfile;
   initial: TodaySnapshot;
 }) {
-  const { snapshot, logWater, toggleHabit, logFood, submitCheckin } = useToday(
-    profile.timezone,
-    initial,
-  );
+  const { snapshot, logWater, toggleHabit, logFood, logWeight, submitCheckin } =
+    useToday(profile.timezone, initial);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [foodOpen, setFoodOpen] = useState(false);
 
@@ -67,12 +66,20 @@ export function TodayClient({
 
   const habit = profile.requiredHabit?.trim() || null;
   const water = profile.goalWaterMl;
-  const mission = habit
-    ? `Cumpra “${habit}”${water ? ` e beba ${water}ml de água` : ''}.`
+  const proteinGoal = profile.goalProteinG;
+
+  // Composite mission: habit + water + protein (whatever is configured).
+  const targets: string[] = [];
+  if (habit) targets.push(`cumpra “${habit}”`);
+  if (water) targets.push(`beba ${water}ml de água`);
+  if (proteinGoal) targets.push(`bata ${proteinGoal}g de proteína`);
+  const mission = targets.length
+    ? `Hoje: ${targets.join(' · ')}.`
     : 'Defina seu hábito nas configurações para receber a missão do dia.';
 
-  const waterReached = water != null && snapshot.waterMl >= water;
-  const defaultMissionDone = snapshot.habitDone && (water == null || waterReached);
+  const waterReached = water == null || snapshot.waterMl >= water;
+  const proteinReached = proteinGoal == null || snapshot.proteinToday >= proteinGoal;
+  const defaultMissionDone = snapshot.habitDone && waterReached && proteinReached;
 
   return (
     <main className="flex min-h-screen flex-col gap-6 px-5 pb-28 pt-10">
@@ -105,6 +112,13 @@ export function TodayClient({
         goalKcal={profile.goalKcal}
         goalProteinG={profile.goalProteinG}
         onOpen={() => setFoodOpen(true)}
+      />
+
+      <WeightCard
+        latest={snapshot.latestWeight}
+        prev={snapshot.prevWeight}
+        onLog={(kg) => logWeight.mutate(kg)}
+        pending={logWeight.isPending}
       />
 
       <section className="grid grid-cols-2 gap-3">

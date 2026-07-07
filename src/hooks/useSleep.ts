@@ -31,13 +31,5 @@ export function useSleep(timezone: string, initial: SleepData) {
     onSuccess: invalidate,
   });
 
-  const logWeight = useMutation({
-    mutationFn: async (kg: number) => {
-      const { error } = await supabase.rpc('log_weight', { p_kg: kg });
-      if (error) throw error;
-    },
-    onSuccess: invalidate,
-  });
-
-  return { sleep: query.data ?? initial, logSleep, logWeight };
+  return { sleep: query.data ?? initial, logSleep };
 }

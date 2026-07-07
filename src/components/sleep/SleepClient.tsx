@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useSleep } from '@/hooks/useSleep';
 import {
@@ -16,6 +16,29 @@ import { cn } from '@/lib/utils';
 const PURPLE = '252 96% 68%';
 const WEEKDAY = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
 
+/** Eases a value toward its target with requestAnimationFrame (survives
+ *  prefers-reduced-motion, since it's JS not a CSS transition). */
+function useAnimated(target: number, duration = 850): number {
+  const [value, setValue] = useState(target);
+  const from = useRef(target);
+  useEffect(() => {
+    const startVal = from.current;
+    if (startVal === target) return;
+    const start = performance.now();
+    let raf = 0;
+    const tick = (t: number) => {
+      const p = Math.min(1, (t - start) / duration);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setValue(startVal + (target - startVal) * eased);
+      if (p < 1) raf = requestAnimationFrame(tick);
+      else from.current = target;
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration]);
+  return value;
+}
+
 function Ring({
   fraction,
   size = 176,
@@ -27,9 +50,10 @@ function Ring({
   stroke?: number;
   children?: ReactNode;
 }) {
+  const animFraction = useAnimated(Math.min(1, Math.max(0, fraction)));
   const r = (size - stroke) / 2;
   const circ = 2 * Math.PI * r;
-  const len = Math.min(1, Math.max(0, fraction)) * circ;
+  const len = animFraction * circ;
   return (
     <div className="relative" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="anim-pop -rotate-90">
@@ -60,13 +84,12 @@ export function SleepClient({
   timezone: string;
   initial: SleepData;
 }) {
-  const { sleep, logSleep, logWeight } = useSleep(timezone, initial);
+  const { sleep, logSleep } = useSleep(timezone, initial);
 
   const [hours, setHours] = useState(sleep.today?.hours?.toString() ?? '');
   const [quality, setQuality] = useState<number | null>(
     sleep.today?.quality ?? null,
   );
-  const [weight, setWeight] = useState('');
 
   const loggedHours = sleep.today?.hours ?? 0;
   const fraction = loggedHours / SLEEP_GOAL_HOURS;
@@ -77,11 +100,6 @@ export function SleepClient({
   const days = Array.from({ length: 7 }, (_, i) => shiftLocalDay(today, i - 6));
   const byDate = new Map(sleep.week.map((w) => [w.ref_date, w.hours]));
   const maxH = Math.max(SLEEP_GOAL_HOURS, ...sleep.week.map((w) => w.hours), 1);
-
-  const weightDelta =
-    sleep.latestWeight != null && sleep.prevWeight != null
-      ? Math.round((sleep.latestWeight - sleep.prevWeight) * 10) / 10
-      : null;
 
   return (
     <div className="night min-h-screen">
@@ -193,52 +211,6 @@ export function SleepClient({
           </div>
         </section>
 
-        {/* Weight */}
-        <section className="surface-2 flex flex-col gap-3 rounded-3xl p-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <ThiingsAsset assetKey="weight" size={26} />
-              <span className="text-sm font-medium">Peso</span>
-            </div>
-            {sleep.latestWeight != null ? (
-              <span className="flex items-baseline gap-2">
-                <span className="text-base font-semibold tabular-nums">
-                  {sleep.latestWeight} kg
-                </span>
-                {weightDelta != null && weightDelta !== 0 ? (
-                  <span
-                    className={cn(
-                      'text-xs font-medium',
-                      weightDelta < 0 ? 'text-status-ontrack' : 'text-status-atrisk',
-                    )}
-                  >
-                    {weightDelta < 0 ? '▼' : '▲'} {Math.abs(weightDelta)}
-                  </span>
-                ) : null}
-              </span>
-            ) : null}
-          </div>
-          <div className="flex gap-2">
-            <input
-              inputMode="decimal"
-              value={weight}
-              onChange={(e) => setWeight(e.target.value)}
-              placeholder="Peso de hoje (kg)"
-              className="min-h-11 min-w-0 flex-1 rounded-lg border border-border bg-card px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/60"
-            />
-            <button
-              type="button"
-              disabled={!(Number(weight) > 0) || logWeight.isPending}
-              onClick={() => {
-                logWeight.mutate(Number(weight));
-                setWeight('');
-              }}
-              className="press min-h-11 shrink-0 cursor-pointer rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-50"
-            >
-              Salvar
-            </button>
-          </div>
-        </section>
       </main>
     </div>
   );

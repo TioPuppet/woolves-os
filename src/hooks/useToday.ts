@@ -110,6 +110,14 @@ export function useToday(timezone: string, initial: TodaySnapshot) {
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
   });
 
+  const logWeight = useMutation({
+    mutationFn: async (kg: number) => {
+      const { error } = await supabase.rpc('log_weight', { p_kg: kg });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+  });
+
   const submitCheckin = useMutation({
     mutationFn: async (v: {
       mood: number;
@@ -131,6 +139,7 @@ export function useToday(timezone: string, initial: TodaySnapshot) {
     logWater,
     toggleHabit,
     logFood,
+    logWeight,
     submitCheckin,
   };
 }
