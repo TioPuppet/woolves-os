@@ -15,6 +15,7 @@ import { WaterCard } from './WaterCard';
 import { HabitCard } from './HabitCard';
 import { NutritionCard } from './NutritionCard';
 import { WeightCard } from './WeightCard';
+import { AiCoachCard } from './AiCoachCard';
 import { FoodSearchSheet } from './FoodSearchSheet';
 import { CheckinSheet } from './CheckinSheet';
 
@@ -91,6 +92,8 @@ export function TodayClient({
       />
 
       <MissionCard mission={mission} status={status} />
+
+      <AiCoachCard />
 
       <WaterCard
         waterMl={snapshot.waterMl}
