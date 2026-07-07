@@ -45,7 +45,7 @@ export function MissionCard({
             {recovery ? 'Missão de recuperação' : 'Missão de hoje'}
           </h2>
         </div>
-        <StatusBadge status={status} />
+        {text ? <StatusBadge status={status} /> : null}
       </div>
 
       {editing ? (

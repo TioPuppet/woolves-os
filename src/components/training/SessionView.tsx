@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { PlanExercise, SetLog, LastPerf } from '@/lib/training';
@@ -9,9 +9,42 @@ import { muscleAssetKey, muscleLabel } from '@/lib/muscles';
 import { ThiingsAsset } from '@/components/ThiingsAsset';
 import { cn } from '@/lib/utils';
 
+const REST_DEFAULT = 90;
+
 interface CustomTechnique {
   id: number;
   name: string;
+}
+
+function fmt(sec: number): string {
+  const m = Math.floor(sec / 60);
+  const s = Math.max(0, sec % 60);
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+function feedback() {
+  if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(180);
+  try {
+    const Ctx =
+      (window as unknown as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext })
+        .AudioContext ??
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Ctx) return;
+    const ctx = new Ctx();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.connect(g);
+    g.connect(ctx.destination);
+    o.frequency.value = 880;
+    g.gain.value = 0.08;
+    o.start();
+    setTimeout(() => {
+      o.stop();
+      void ctx.close();
+    }, 180);
+  } catch {
+    /* audio blocked — vibration still fires */
+  }
 }
 
 function summarizePerf(rows: LastPerf[]): string | null {
@@ -32,6 +65,7 @@ function ExerciseBlock({
   onDeleteSet,
   onAddTechnique,
   onDeleteTechnique,
+  onRest,
   logging,
 }: {
   planExercise: PlanExercise;
@@ -49,6 +83,7 @@ function ExerciseBlock({
   onDeleteSet: (id: number) => void;
   onAddTechnique: (name: string) => void;
   onDeleteTechnique: (id: number) => void;
+  onRest: (seconds: number) => void;
   logging: boolean;
 }) {
   const supabase = getSupabaseBrowserClient();
@@ -68,36 +103,53 @@ function ExerciseBlock({
   const [load, setLoad] = useState('');
   const [rpe, setRpe] = useState('');
   const [setType, setSetType] = useState<'work' | 'warmup'>('work');
-  const [technique, setTechnique] = useState<string | null>(
-    planExercise.technique ?? null,
-  );
+  const [technique, setTechnique] = useState<string | null>(planExercise.technique ?? null);
   const [customOpen, setCustomOpen] = useState(false);
   const [customName, setCustomName] = useState('');
 
   const perfText = lastPerf.data ? summarizePerf(lastPerf.data) : null;
-  const canAdd = reps.trim() !== '' || load.trim() !== '';
-
-  const customNames = useMemo(
-    () => new Set(techniques.map((t) => t.name)),
-    [techniques],
+  const prevBest = useMemo(
+    () => Math.max(0, ...(lastPerf.data ?? []).map((r) => r.load_kg ?? 0)),
+    [lastPerf.data],
   );
 
-  const reset = () => {
-    setReps('');
-    setLoad('');
-    setRpe('');
-  };
+  // Prefill reps/load from last time's top set (progressive overload).
+  const prefilled = useRef(false);
+  useEffect(() => {
+    if (prefilled.current) return;
+    if (sets.length > 0) {
+      prefilled.current = true;
+      return;
+    }
+    const lp = lastPerf.data;
+    if (lp && lp.length) {
+      const top = lp.reduce((a, b) => ((b.load_kg ?? 0) > (a.load_kg ?? 0) ? b : a));
+      if (top.reps != null) setReps(String(top.reps));
+      if (top.load_kg != null) setLoad(String(top.load_kg));
+      prefilled.current = true;
+    }
+  }, [lastPerf.data, sets.length]);
+
+  const canAdd = reps.trim() !== '' || load.trim() !== '';
+  const workDone = sets.filter((s) => s.set_type === 'work').length;
+  const target = planExercise.target_sets;
+
+  const customNames = useMemo(() => new Set(techniques.map((t) => t.name)), [techniques]);
 
   return (
     <div className="surface-2 flex flex-col gap-3 rounded-2xl p-4">
       <div className="flex items-center gap-2.5">
         <ThiingsAsset
-          assetKey={muscleAssetKey(
-            planExercise.muscle_group ?? planExercise.exercise.muscle_group,
-          )}
+          assetKey={muscleAssetKey(planExercise.muscle_group ?? planExercise.exercise.muscle_group)}
           size={30}
         />
-        <span className="text-sm font-semibold">{planExercise.exercise.name}</span>
+        <span className="min-w-0 flex-1 truncate text-sm font-semibold">
+          {planExercise.exercise.name}
+        </span>
+        <span className="shrink-0 rounded-full bg-card px-2 py-0.5 text-xs font-semibold text-muted-foreground tabular-nums">
+          {workDone}
+          {target ? `/${target}` : ''} séries
+        </span>
       </div>
 
       {planExercise.target_sets ||
@@ -128,59 +180,55 @@ function ExerciseBlock({
 
       {sets.length > 0 ? (
         <div className="flex flex-col gap-1.5">
-          {sets.map((s) => (
-            <div
-              key={s.id}
-              className="flex items-center gap-2 text-sm tabular-nums"
-            >
-              <span className="w-5 shrink-0 text-xs text-muted-foreground">
-                {s.set_no}ª
-              </span>
-              {s.set_type === 'warmup' ? (
-                <span className="shrink-0 rounded bg-streak/15 px-1.5 py-0.5 text-[9px] font-bold uppercase text-streak">
-                  Aquec
+          {sets.map((s) => {
+            const isPR = s.set_type === 'work' && s.load_kg != null && prevBest > 0 && s.load_kg > prevBest;
+            return (
+              <div key={s.id} className="flex items-center gap-2 text-sm tabular-nums">
+                <span className="w-5 shrink-0 text-xs text-muted-foreground">{s.set_no}ª</span>
+                {s.set_type === 'warmup' ? (
+                  <span className="shrink-0 rounded bg-streak/15 px-1.5 py-0.5 text-[9px] font-bold uppercase text-streak">
+                    Aquec
+                  </span>
+                ) : null}
+                <span className="shrink-0">
+                  {s.reps ?? '—'}
+                  <span className="text-xs text-muted-foreground"> reps</span>
                 </span>
-              ) : null}
-              <span className="shrink-0">
-                {s.reps ?? '—'}
-                <span className="text-xs text-muted-foreground"> reps</span>
-              </span>
-              <span className="shrink-0">
-                {s.load_kg ?? '—'}
-                <span className="text-xs text-muted-foreground"> kg</span>
-              </span>
-              <span className="shrink-0 text-xs text-muted-foreground">
-                RPE {s.rpe ?? '—'}
-              </span>
-              {s.technique ? (
-                <span className="min-w-0 truncate rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-medium text-primary">
-                  {s.technique}
+                <span className="shrink-0">
+                  {s.load_kg ?? '—'}
+                  <span className="text-xs text-muted-foreground"> kg</span>
                 </span>
-              ) : null}
-              <button
-                type="button"
-                onClick={() => onDeleteSet(s.id)}
-                aria-label="Remover série"
-                className="ml-auto shrink-0 text-muted-foreground hover:text-status-broken"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
-                  <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-              </button>
-            </div>
-          ))}
+                <span className="shrink-0 text-xs text-muted-foreground">RPE {s.rpe ?? '—'}</span>
+                {isPR ? (
+                  <span className="shrink-0 rounded-full bg-primary px-1.5 py-0.5 text-[9px] font-bold uppercase text-primary-foreground">
+                    PR
+                  </span>
+                ) : null}
+                {s.technique ? (
+                  <span className="min-w-0 truncate rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-medium text-primary">
+                    {s.technique}
+                  </span>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => onDeleteSet(s.id)}
+                  aria-label="Remover série"
+                  className="ml-auto shrink-0 text-muted-foreground hover:text-status-broken"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+                    <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                </button>
+              </div>
+            );
+          })}
         </div>
       ) : null}
 
       {/* Technique chips */}
       <div className="flex flex-wrap gap-1.5">
         {CURATED_TECHNIQUES.map((t) => (
-          <TechChip
-            key={t}
-            label={t}
-            active={technique === t}
-            onClick={() => setTechnique(technique === t ? null : t)}
-          />
+          <TechChip key={t} label={t} active={technique === t} onClick={() => setTechnique(technique === t ? null : t)} />
         ))}
         {techniques.map((t) => (
           <TechChip
@@ -254,16 +302,19 @@ function ExerciseBlock({
           type="button"
           disabled={logging || !canAdd}
           onClick={() => {
+            const loadNum = load === '' ? null : Number(load);
             onLog({
               exerciseId: exId,
               setNo: sets.length + 1,
               reps: reps === '' ? null : Number(reps),
-              loadKg: load === '' ? null : Number(load),
+              loadKg: loadNum,
               rpe: rpe === '' ? null : Number(rpe),
               technique,
               setType,
             });
-            reset();
+            if (loadNum != null && prevBest > 0 && loadNum > prevBest) feedback();
+            setRpe(''); // keep reps/load as prefill for the next set
+            onRest(planExercise.rest_seconds ?? REST_DEFAULT);
           }}
           className="press min-h-10 cursor-pointer rounded-lg bg-primary px-3 text-lg font-semibold leading-none text-primary-foreground disabled:opacity-40"
         >
@@ -289,27 +340,48 @@ function TechChip({
     <span
       className={cn(
         'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium',
-        active
-          ? 'border-primary/50 bg-primary/15 text-primary'
-          : 'border-border text-muted-foreground',
+        active ? 'border-primary/50 bg-primary/15 text-primary' : 'border-border text-muted-foreground',
       )}
     >
       <button type="button" onClick={onClick} className="cursor-pointer">
         {label}
       </button>
       {onDelete ? (
-        <button
-          type="button"
-          onClick={onDelete}
-          aria-label={`Excluir ${label}`}
-          className="text-muted-foreground hover:text-status-broken"
-        >
+        <button type="button" onClick={onDelete} aria-label={`Excluir ${label}`} className="text-muted-foreground hover:text-status-broken">
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden>
             <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
           </svg>
         </button>
       ) : null}
     </span>
+  );
+}
+
+function RestBar({
+  left,
+  total,
+  onAdjust,
+  onSkip,
+}: {
+  left: number;
+  total: number;
+  onAdjust: (delta: number) => void;
+  onSkip: () => void;
+}) {
+  const pct = total > 0 ? Math.max(0, Math.min(100, (left / total) * 100)) : 0;
+  return (
+    <div className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+76px)] z-40 mx-auto w-full max-w-app px-5">
+      <div className="glass flex items-center gap-3 rounded-2xl border border-primary/30 p-3 shadow-[0_10px_30px_-10px_hsl(var(--primary)/0.5)]">
+        <span className="text-sm font-semibold text-primary">Descanso</span>
+        <span className="text-lg font-bold tabular-nums">{fmt(left)}</span>
+        <div className="mx-1 h-1.5 flex-1 overflow-hidden rounded-full bg-card">
+          <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${pct}%` }} />
+        </div>
+        <button type="button" onClick={() => onAdjust(-15)} className="press rounded-lg bg-card px-2 py-1 text-xs font-semibold">−15</button>
+        <button type="button" onClick={() => onAdjust(15)} className="press rounded-lg bg-card px-2 py-1 text-xs font-semibold">+15</button>
+        <button type="button" onClick={onSkip} className="press rounded-lg bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">Pular</button>
+      </div>
+    </div>
   );
 }
 
@@ -341,16 +413,48 @@ export function SessionView({
     },
   });
 
+  const sessionMeta = useQuery({
+    queryKey: ['session-meta', sessionId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('workout_sessions')
+        .select('created_at')
+        .eq('id', sessionId)
+        .maybeSingle();
+      return (data as { created_at: string } | null) ?? null;
+    },
+  });
+
   const techniques = useQuery({
     queryKey: ['techniques'],
     queryFn: async () => {
-      const { data } = await supabase
-        .from('techniques')
-        .select('id, name')
-        .order('name');
+      const { data } = await supabase.from('techniques').select('id, name').order('name');
       return (data ?? []) as CustomTechnique[];
     },
   });
+
+  // ---- Live clock (elapsed + rest countdown share one ticker) ----
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  const [restEnd, setRestEnd] = useState<number | null>(null);
+  const [restTotal, setRestTotal] = useState(REST_DEFAULT);
+  const restLeft = restEnd != null ? Math.max(0, Math.ceil((restEnd - now) / 1000)) : null;
+
+  useEffect(() => {
+    if (restEnd != null && restLeft === 0) {
+      feedback();
+      setRestEnd(null);
+    }
+  }, [restLeft, restEnd]);
+
+  const startRest = (sec: number) => {
+    setRestTotal(sec);
+    setRestEnd(Date.now() + sec * 1000);
+  };
 
   const logSet = useMutation({
     mutationFn: async (v: {
@@ -374,8 +478,7 @@ export function SessionView({
       });
       if (error) throw error;
     },
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: ['session-sets', sessionId] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['session-sets', sessionId] }),
   });
 
   const deleteSet = useMutation({
@@ -383,15 +486,12 @@ export function SessionView({
       const { error } = await supabase.from('set_logs').delete().eq('id', id);
       if (error) throw error;
     },
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: ['session-sets', sessionId] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['session-sets', sessionId] }),
   });
 
   const addTechnique = useMutation({
     mutationFn: async (name: string) => {
-      const { error } = await supabase
-        .from('techniques')
-        .insert({ user_id: userId, name });
+      const { error } = await supabase.from('techniques').insert({ user_id: userId, name });
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['techniques'] }),
@@ -407,12 +507,15 @@ export function SessionView({
 
   const complete = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.rpc('complete_session', {
-        p_session_id: sessionId,
-      });
+      const { error } = await supabase.rpc('complete_session', { p_session_id: sessionId });
       if (error) throw error;
     },
     onSuccess: () => {
+      // Zera tudo: descanso, cache desta sessão e performance para um começo limpo.
+      setRestEnd(null);
+      qc.removeQueries({ queryKey: ['session-sets', sessionId] });
+      qc.removeQueries({ queryKey: ['session-meta', sessionId] });
+      qc.invalidateQueries({ queryKey: ['last-perf'] });
       qc.invalidateQueries({ queryKey: ['today'] });
       onComplete();
     },
@@ -420,17 +523,24 @@ export function SessionView({
 
   const cancel = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase
-        .from('workout_sessions')
-        .delete()
-        .eq('id', sessionId);
+      const { error } = await supabase.from('workout_sessions').delete().eq('id', sessionId);
       if (error) throw error;
     },
-    onSuccess: () => onCancel(),
+    onSuccess: () => {
+      setRestEnd(null);
+      qc.removeQueries({ queryKey: ['session-sets', sessionId] });
+      onCancel();
+    },
   });
 
   const allSets = sessionSets.data ?? [];
   const custom = techniques.data ?? [];
+
+  // Live session stats.
+  const workSets = allSets.filter((s) => s.set_type === 'work');
+  const totalVolume = workSets.reduce((sum, s) => sum + (s.reps ?? 0) * (s.load_kg ?? 0), 0);
+  const startedAt = sessionMeta.data?.created_at ? new Date(sessionMeta.data.created_at).getTime() : null;
+  const elapsed = startedAt ? Math.max(0, Math.floor((now - startedAt) / 1000)) : null;
 
   // Group exercises by muscle group, preserving plan order.
   const groups: { key: string; items: PlanExercise[] }[] = [];
@@ -443,6 +553,22 @@ export function SessionView({
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Resumo ao vivo */}
+      <div className="surface-1 grid grid-cols-3 gap-2 rounded-2xl p-3 text-center">
+        <div>
+          <div className="text-lg font-bold tabular-nums">{elapsed != null ? fmt(elapsed) : '—'}</div>
+          <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Tempo</div>
+        </div>
+        <div>
+          <div className="text-lg font-bold tabular-nums">{workSets.length}</div>
+          <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Séries</div>
+        </div>
+        <div>
+          <div className="text-lg font-bold tabular-nums">{Math.round(totalVolume).toLocaleString('pt-BR')}</div>
+          <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Volume kg</div>
+        </div>
+      </div>
+
       {groups.map((grp) => (
         <div key={grp.key} className="flex flex-col gap-3">
           <div className="flex items-center gap-2">
@@ -459,6 +585,7 @@ export function SessionView({
               onDeleteSet={(id) => deleteSet.mutate(id)}
               onAddTechnique={(name) => addTechnique.mutate(name)}
               onDeleteTechnique={(id) => deleteTechnique.mutate(id)}
+              onRest={startRest}
               logging={logSet.isPending}
             />
           ))}
@@ -478,11 +605,7 @@ export function SessionView({
         type="button"
         disabled={cancel.isPending}
         onClick={() => {
-          if (
-            window.confirm(
-              'Cancelar este treino? As séries registradas serão perdidas.',
-            )
-          ) {
+          if (window.confirm('Cancelar este treino? As séries registradas serão perdidas.')) {
             cancel.mutate();
           }
         }}
@@ -490,6 +613,15 @@ export function SessionView({
       >
         {cancel.isPending ? 'Cancelando…' : 'Cancelar treino'}
       </button>
+
+      {restLeft != null ? (
+        <RestBar
+          left={restLeft}
+          total={restTotal}
+          onAdjust={(d) => setRestEnd((e) => (e != null ? e + d * 1000 : e))}
+          onSkip={() => setRestEnd(null)}
+        />
+      ) : null}
     </div>
   );
 }
