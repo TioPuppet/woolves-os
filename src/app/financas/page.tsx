@@ -1,6 +1,13 @@
 import { redirect } from 'next/navigation';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
-import { fetchFinanceToday } from '@/lib/finance';
+import {
+  fetchMonth,
+  fetchBudgets,
+  fetchRecurring,
+  fetchTrend,
+  currentMonthKey,
+  type MonthData,
+} from '@/lib/finance';
 import { FinanceClient } from '@/components/finance/FinanceClient';
 
 export default async function FinancasPage() {
@@ -17,8 +24,23 @@ export default async function FinancasPage() {
     .maybeSingle();
 
   const timezone = profile?.timezone ?? 'America/Sao_Paulo';
-  const limit = profile?.goal_spend_limit_brl ?? null;
-  const initial = await fetchFinanceToday(supabase, timezone, limit);
+  const dailyLimit = profile?.goal_spend_limit_brl ?? null;
+  const monthKey = currentMonthKey(timezone);
 
-  return <FinanceClient timezone={timezone} limit={limit} initial={initial} />;
+  const [transactions, budgets, recurring, trend] = await Promise.all([
+    fetchMonth(supabase, monthKey),
+    fetchBudgets(supabase),
+    fetchRecurring(supabase),
+    fetchTrend(supabase, timezone),
+  ]);
+  const initial: MonthData = { transactions, budgets, recurring, trend };
+
+  return (
+    <FinanceClient
+      userId={user.id}
+      timezone={timezone}
+      dailyLimit={dailyLimit}
+      initial={initial}
+    />
+  );
 }
