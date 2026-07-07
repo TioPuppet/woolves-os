@@ -125,6 +125,55 @@ export function useTraining(userId: string, timezone: string) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['plans'] }),
   });
 
+  const renamePlan = useMutation({
+    mutationFn: async (v: { id: number; name: string }) => {
+      const { error } = await supabase
+        .from('workout_plans')
+        .update({ name: v.name.trim() })
+        .eq('id', v.id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['plans'] }),
+  });
+
+  // Swap the order of two exercises within a plan.
+  const swapExercises = useMutation({
+    mutationFn: async (v: { aId: number; aOrder: number; bId: number; bOrder: number }) => {
+      const r1 = await supabase.from('plan_exercises').update({ order_idx: v.bOrder }).eq('id', v.aId);
+      if (r1.error) throw r1.error;
+      const r2 = await supabase.from('plan_exercises').update({ order_idx: v.aOrder }).eq('id', v.bId);
+      if (r2.error) throw r2.error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['plans'] }),
+  });
+
+  const duplicatePlan = useMutation({
+    mutationFn: async (plan: Plan) => {
+      const { data, error } = await supabase
+        .from('workout_plans')
+        .insert({ user_id: userId, name: `${plan.name} (cópia)`, muscle_groups: plan.muscle_groups })
+        .select('id')
+        .single();
+      if (error) throw error;
+      const newId = (data as { id: number }).id;
+      const rows = plan.plan_exercises.map((pe) => ({
+        plan_id: newId,
+        exercise_id: pe.exercise_id,
+        order_idx: pe.order_idx,
+        muscle_group: pe.muscle_group,
+        target_sets: pe.target_sets,
+        target_reps: pe.target_reps,
+        rest_seconds: pe.rest_seconds,
+        technique: pe.technique,
+      }));
+      if (rows.length) {
+        const { error: e2 } = await supabase.from('plan_exercises').insert(rows);
+        if (e2) throw e2;
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['plans'] }),
+  });
+
   const startSession = useMutation({
     mutationFn: async (planId: number | null): Promise<number> => {
       const { data, error } = await supabase
@@ -151,6 +200,9 @@ export function useTraining(userId: string, timezone: string) {
     addExerciseToPlan,
     updatePlanExercise,
     deletePlanExercise,
+    renamePlan,
+    swapExercises,
+    duplicatePlan,
     startSession,
   };
 }

@@ -10,6 +10,7 @@ import { CURATED_TECHNIQUES } from '@/lib/techniques';
 import { ThiingsAsset } from '@/components/ThiingsAsset';
 import { cn } from '@/lib/utils';
 import { SessionView } from './SessionView';
+import { ExerciseHistorySheet } from './ExerciseHistorySheet';
 
 const inputCls =
   'min-h-10 w-full rounded-lg border border-border bg-card px-2.5 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary/60';
@@ -23,6 +24,11 @@ function PlanExerciseRow({
   pe,
   onUpdate,
   onDelete,
+  onMoveUp,
+  onMoveDown,
+  canUp,
+  canDown,
+  onHistory,
 }: {
   pe: PlanExercise;
   onUpdate: (
@@ -35,6 +41,11 @@ function PlanExerciseRow({
     },
   ) => void;
   onDelete: (id: number) => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  canUp: boolean;
+  canDown: boolean;
+  onHistory: () => void;
 }) {
   const [sets, setSets] = useState(pe.target_sets?.toString() ?? '');
   const [reps, setReps] = useState(pe.target_reps ?? '');
@@ -50,16 +61,50 @@ function PlanExerciseRow({
             {pe.exercise.name}
           </span>
         </span>
-        <button
-          type="button"
-          onClick={() => onDelete(pe.id)}
-          aria-label={`Remover ${pe.exercise.name}`}
-          className="shrink-0 text-muted-foreground transition-colors hover:text-status-broken"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-            <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          </svg>
-        </button>
+        <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
+          <button
+            type="button"
+            onClick={onMoveUp}
+            disabled={!canUp}
+            aria-label="Mover para cima"
+            className="press transition-colors hover:text-foreground disabled:opacity-25"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <path d="M6 15l6-6 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            onClick={onMoveDown}
+            disabled={!canDown}
+            aria-label="Mover para baixo"
+            className="press transition-colors hover:text-foreground disabled:opacity-25"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            onClick={onHistory}
+            aria-label="Ver progresso"
+            className="press transition-colors hover:text-primary"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <path d="M4 20V10M10 20V4M16 20v-7M4 20h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            onClick={() => onDelete(pe.id)}
+            aria-label={`Remover ${pe.exercise.name}`}
+            className="press transition-colors hover:text-status-broken"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </button>
+        </span>
       </div>
 
       <div className="grid grid-cols-3 gap-2">
@@ -120,6 +165,8 @@ function GroupSection({
   onAdd,
   onUpdate,
   onDeleteExercise,
+  onReorder,
+  onHistory,
   busy,
 }: {
   groupKey: string;
@@ -128,6 +175,8 @@ function GroupSection({
   onAdd: (name: string) => void;
   onUpdate: PlanExerciseRowUpdate;
   onDeleteExercise: (id: number) => void;
+  onReorder: (a: PlanExercise, b: PlanExercise) => void;
+  onHistory: (pe: PlanExercise) => void;
   busy: boolean;
 }) {
   const [name, setName] = useState('');
@@ -140,14 +189,23 @@ function GroupSection({
         <h4 className="text-base font-semibold">{label}</h4>
       </div>
 
-      {exercises.map((pe) => (
-        <PlanExerciseRow
-          key={pe.id}
-          pe={pe}
-          onUpdate={onUpdate}
-          onDelete={onDeleteExercise}
-        />
-      ))}
+      {exercises.map((pe, i) => {
+        const prev = exercises[i - 1];
+        const next = exercises[i + 1];
+        return (
+          <PlanExerciseRow
+            key={pe.id}
+            pe={pe}
+            onUpdate={onUpdate}
+            onDelete={onDeleteExercise}
+            canUp={!!prev}
+            canDown={!!next}
+            onMoveUp={() => prev && onReorder(pe, prev)}
+            onMoveDown={() => next && onReorder(pe, next)}
+            onHistory={() => onHistory(pe)}
+          />
+        );
+      })}
 
       {canAdd ? (
         <div className="flex gap-2">
@@ -192,6 +250,10 @@ function PlanCard({
   onAddExercise,
   onUpdate,
   onDeleteExercise,
+  onReorder,
+  onHistory,
+  onRename,
+  onDuplicate,
   onTrain,
   onDelete,
   busy,
@@ -205,10 +267,15 @@ function PlanCard({
   ) => void;
   onUpdate: PlanExerciseRowUpdate;
   onDeleteExercise: (id: number) => void;
+  onReorder: (a: PlanExercise, b: PlanExercise) => void;
+  onHistory: (pe: PlanExercise) => void;
+  onRename: (id: number, name: string) => void;
+  onDuplicate: (plan: Plan) => void;
   onTrain: (plan: Plan) => void;
   onDelete: (planId: number) => void;
   busy: boolean;
 }) {
+  const [title, setTitle] = useState(plan.name);
   const present = Array.from(new Set(plan.plan_exercises.map(groupOf)));
   const groups = plan.muscle_groups.length
     ? Array.from(new Set([...plan.muscle_groups, ...present.filter((g) => g !== 'outros')]))
@@ -217,12 +284,28 @@ function PlanCard({
 
   return (
     <div className="surface-2 rise flex flex-col gap-6 rounded-2xl p-5">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">{plan.name}</h3>
+      <div className="flex items-center justify-between gap-2">
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          onBlur={() => {
+            if (title.trim() && title.trim() !== plan.name) onRename(plan.id, title);
+            else setTitle(plan.name);
+          }}
+          aria-label="Nome do treino"
+          className="min-w-0 flex-1 rounded-md bg-transparent px-1 text-lg font-semibold focus:bg-card focus:outline-none focus:ring-1 focus:ring-primary/50"
+        />
+        <button
+          type="button"
+          onClick={() => onDuplicate(plan)}
+          className="shrink-0 text-xs text-muted-foreground transition-colors hover:text-primary"
+        >
+          Duplicar
+        </button>
         <button
           type="button"
           onClick={() => onDelete(plan.id)}
-          className="text-xs text-muted-foreground transition-colors hover:text-status-broken"
+          className="shrink-0 text-xs text-muted-foreground transition-colors hover:text-status-broken"
         >
           Excluir
         </button>
@@ -237,6 +320,8 @@ function PlanCard({
           onAdd={(name) => onAddExercise(plan.id, g, name, plan.plan_exercises.length)}
           onUpdate={onUpdate}
           onDeleteExercise={onDeleteExercise}
+          onReorder={onReorder}
+          onHistory={onHistory}
           busy={busy}
         />
       ))}
@@ -249,6 +334,8 @@ function PlanCard({
           onAdd={() => {}}
           onUpdate={onUpdate}
           onDeleteExercise={onDeleteExercise}
+          onReorder={onReorder}
+          onHistory={onHistory}
           busy={busy}
         />
       ) : null}
@@ -349,6 +436,9 @@ export function TrainingClient({
     addExerciseToPlan,
     updatePlanExercise,
     deletePlanExercise,
+    renamePlan,
+    swapExercises,
+    duplicatePlan,
     startSession,
   } = useTraining(userId, timezone);
 
@@ -358,6 +448,7 @@ export function TrainingClient({
   const [newPlan, setNewPlan] = useState('');
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
   const [celebrate, setCelebrate] = useState<string | null>(null);
+  const [historyFor, setHistoryFor] = useState<{ id: number; name: string } | null>(null);
   const qc = useQueryClient();
 
   // Fully reset to a clean slate for a brand-new workout.
@@ -509,6 +600,17 @@ export function TrainingClient({
                 onAddExercise={addExercise}
                 onUpdate={(id, patch) => updatePlanExercise.mutate({ id, patch })}
                 onDeleteExercise={(id) => deletePlanExercise.mutate(id)}
+                onReorder={(a, b) =>
+                  swapExercises.mutate({
+                    aId: a.id,
+                    aOrder: a.order_idx,
+                    bId: b.id,
+                    bOrder: b.order_idx,
+                  })
+                }
+                onHistory={(pe) => setHistoryFor({ id: pe.exercise_id, name: pe.exercise.name })}
+                onRename={(id, planName) => renamePlan.mutate({ id, name: planName })}
+                onDuplicate={(p) => duplicatePlan.mutate(p)}
                 onDelete={(id) => deletePlan.mutate(id)}
                 onTrain={async (p) => {
                   const id = await startSession.mutateAsync(p.id);
@@ -517,6 +619,15 @@ export function TrainingClient({
               />
             ))
           )}
+
+          {historyFor ? (
+            <ExerciseHistorySheet
+              open
+              exerciseId={historyFor.id}
+              exerciseName={historyFor.name}
+              onClose={() => setHistoryFor(null)}
+            />
+          ) : null}
         </>
       )}
     </main>
