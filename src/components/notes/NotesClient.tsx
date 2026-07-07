@@ -1,97 +1,33 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { useNotes } from '@/hooks/useNotes';
-import { noteTitle, notePreview, noteDate, type Note } from '@/lib/notes';
-import { type KanbanCard } from '@/lib/kanban';
+import { noteTitle, notePreview, noteDate, noteIcon, type Note } from '@/lib/notes';
+import { type Board } from '@/lib/kanban';
 import { ThiingsAsset } from '@/components/ThiingsAsset';
 import { cn } from '@/lib/utils';
 import { KanbanBoard } from './KanbanBoard';
-
-function NoteEditor({
-  note,
-  onBack,
-  onSave,
-  onDelete,
-}: {
-  note: Note;
-  onBack: () => void;
-  onSave: (content: string) => void;
-  onDelete: () => void;
-}) {
-  const [content, setContent] = useState(note.content);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const latest = useRef(content);
-  latest.current = content;
-
-  useEffect(() => {
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => onSave(latest.current), 600);
-    return () => {
-      if (timer.current) clearTimeout(timer.current);
-    };
-  }, [content, onSave]);
-
-  const back = () => {
-    if (timer.current) clearTimeout(timer.current);
-    if (latest.current.trim() === '') onDelete();
-    else onSave(latest.current);
-    onBack();
-  };
-
-  return (
-    <main className="flex min-h-screen flex-col px-5 pb-28 pt-10">
-      <header className="mb-4 flex items-center justify-between">
-        <button type="button" onClick={back} className="press flex items-center gap-1 text-sm font-medium text-primary">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
-            <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          Espaço
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            onDelete();
-            onBack();
-          }}
-          aria-label="Excluir nota"
-          className="press text-muted-foreground hover:text-status-broken"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
-            <path d="M6 7h12M9 7V5h6v2M8 7l1 12h6l1-12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-      </header>
-      <textarea
-        autoFocus
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        placeholder="Comece a escrever…"
-        className="min-h-[60vh] w-full flex-1 resize-none bg-transparent text-base leading-relaxed text-foreground placeholder:text-muted-foreground focus:outline-none"
-      />
-    </main>
-  );
-}
+import { PageEditor } from './PageEditor';
 
 export function NotesClient({
   userId,
   initialNotes,
-  initialCards,
+  initialBoard,
 }: {
   userId: string;
   initialNotes: Note[];
-  initialCards: KanbanCard[];
+  initialBoard: Board;
 }) {
   const { notes, refetch, createNote, updateNote, deleteNote } = useNotes(
     userId,
     initialNotes,
   );
-  const [view, setView] = useState<'notas' | 'quadro'>('notas');
+  const [view, setView] = useState<'paginas' | 'quadro'>('paginas');
   const [active, setActive] = useState<Note | null>(null);
 
   if (active) {
     return (
-      <NoteEditor
+      <PageEditor
         note={active}
         onBack={() => {
           setActive(null);
@@ -111,7 +47,7 @@ export function NotesClient({
       </header>
 
       <div className="grid grid-cols-2 gap-2">
-        {(['notas', 'quadro'] as const).map((v) => (
+        {(['paginas', 'quadro'] as const).map((v) => (
           <button
             key={v}
             type="button"
@@ -123,12 +59,12 @@ export function NotesClient({
                 : 'border-border text-muted-foreground',
             )}
           >
-            {v === 'notas' ? 'Notas' : 'Quadro'}
+            {v === 'paginas' ? 'Páginas' : 'Quadro'}
           </button>
         ))}
       </div>
 
-      {view === 'notas' ? (
+      {view === 'paginas' ? (
         <>
           <button
             type="button"
@@ -141,10 +77,10 @@ export function NotesClient({
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
               <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
             </svg>
-            Nova nota
+            Nova página
           </button>
           {notes.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nenhuma nota ainda.</p>
+            <p className="text-sm text-muted-foreground">Nenhuma página ainda.</p>
           ) : (
             <div className="flex flex-col gap-2">
               {notes.map((n) => (
@@ -152,12 +88,15 @@ export function NotesClient({
                   key={n.id}
                   type="button"
                   onClick={() => setActive(n)}
-                  className="press surface-2 flex flex-col gap-1 rounded-2xl p-4 text-left"
+                  className="press surface-2 flex items-center gap-3 rounded-2xl p-4 text-left"
                 >
-                  <span className="truncate text-sm font-semibold">{noteTitle(n.content)}</span>
-                  <span className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span className="shrink-0">{noteDate(n.updated_at)}</span>
-                    <span className="min-w-0 truncate">{notePreview(n.content)}</span>
+                  <span className="shrink-0 text-2xl leading-none">{noteIcon(n.content)}</span>
+                  <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span className="truncate text-sm font-semibold">{noteTitle(n.content)}</span>
+                    <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span className="shrink-0">{noteDate(n.updated_at)}</span>
+                      <span className="min-w-0 truncate">{notePreview(n.content)}</span>
+                    </span>
                   </span>
                 </button>
               ))}
@@ -165,7 +104,7 @@ export function NotesClient({
           )}
         </>
       ) : (
-        <KanbanBoard userId={userId} initial={initialCards} />
+        <KanbanBoard userId={userId} initial={initialBoard} />
       )}
     </main>
   );

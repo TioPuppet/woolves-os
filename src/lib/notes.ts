@@ -6,14 +6,103 @@ export interface Note {
   updated_at: string;
 }
 
+/* ------------------------------------------------------------- Block model */
+
+export type BlockType = 'text' | 'h1' | 'h2' | 'todo' | 'bullet';
+
+export interface Block {
+  id: string;
+  type: BlockType;
+  text: string;
+  checked?: boolean;
+}
+
+export interface NoteDoc {
+  icon: string;
+  blocks: Block[];
+}
+
+export const DEFAULT_ICON = '📝';
+
+export const BLOCK_MENU: { type: BlockType; label: string; hint: string }[] = [
+  { type: 'text', label: 'Texto', hint: 'Parágrafo simples' },
+  { type: 'h1', label: 'Título', hint: 'Cabeçalho grande' },
+  { type: 'h2', label: 'Subtítulo', hint: 'Cabeçalho médio' },
+  { type: 'todo', label: 'Lista de tarefas', hint: 'Caixa de seleção' },
+  { type: 'bullet', label: 'Lista com marcadores', hint: 'Item com ponto' },
+];
+
+export function newBlockId(): string {
+  return typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+export function emptyDoc(): NoteDoc {
+  return { icon: DEFAULT_ICON, blocks: [{ id: newBlockId(), type: 'text', text: '' }] };
+}
+
+/** Parse stored content into a NoteDoc, tolerating legacy plain-text notes. */
+export function parseDoc(content: string): NoteDoc {
+  const raw = content?.trim() ?? '';
+  if (raw.startsWith('{')) {
+    try {
+      const obj = JSON.parse(raw) as Partial<NoteDoc>;
+      if (obj && Array.isArray(obj.blocks)) {
+        return {
+          icon: typeof obj.icon === 'string' && obj.icon ? obj.icon : DEFAULT_ICON,
+          blocks: obj.blocks.length
+            ? obj.blocks.map((b) => ({
+                id: b.id ?? newBlockId(),
+                type: (b.type ?? 'text') as BlockType,
+                text: b.text ?? '',
+                ...(b.checked != null ? { checked: b.checked } : {}),
+              }))
+            : emptyDoc().blocks,
+        };
+      }
+    } catch {
+      /* fall through to plain-text handling */
+    }
+  }
+  // Legacy plain text → one text block per line.
+  const lines = raw.split('\n');
+  const blocks: Block[] = lines.map((line) => ({
+    id: newBlockId(),
+    type: 'text',
+    text: line,
+  }));
+  return { icon: DEFAULT_ICON, blocks: blocks.length ? blocks : emptyDoc().blocks };
+}
+
+export function serializeDoc(doc: NoteDoc): string {
+  return JSON.stringify(doc);
+}
+
+function firstText(doc: NoteDoc): string {
+  for (const b of doc.blocks) {
+    if (b.text.trim()) return b.text.trim();
+  }
+  return '';
+}
+
+export function noteIcon(content: string): string {
+  return parseDoc(content).icon;
+}
+
 export function noteTitle(content: string): string {
-  const first = content.split('\n')[0]?.trim() ?? '';
-  return first || 'Nova nota';
+  return firstText(parseDoc(content)) || 'Sem título';
 }
 
 export function notePreview(content: string): string {
-  const rest = content.split('\n').slice(1).join(' ').trim();
-  return rest || 'Sem texto adicional';
+  const doc = parseDoc(content);
+  const title = firstText(doc);
+  const rest = doc.blocks
+    .map((b) => b.text.trim())
+    .filter((t) => t && t !== title)
+    .join(' ')
+    .trim();
+  return rest || 'Página vazia';
 }
 
 export function noteDate(iso: string): string {
