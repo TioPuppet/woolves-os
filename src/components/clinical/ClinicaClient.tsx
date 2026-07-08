@@ -8,13 +8,15 @@ import { useDrugs, useInteractions } from '@/hooks/useClinical';
 import { type Drug, type DrugInteraction } from '@/lib/clinical/drugs';
 import { DrugsTab } from './DrugsTab';
 import { CalculatorsTab } from './CalculatorsTab';
+import { ScoresTab } from './ScoresTab';
 import { InteractionsTab } from './InteractionsTab';
 
-type Tab = 'farmacos' | 'calc' | 'interacoes';
+type Tab = 'farmacos' | 'calc' | 'escores' | 'interacoes';
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'farmacos', label: 'Fármacos' },
   { key: 'calc', label: 'Calculadoras' },
+  { key: 'escores', label: 'Escores' },
   { key: 'interacoes', label: 'Interações' },
 ];
 
@@ -55,7 +57,7 @@ export function ClinicaClient({
         </p>
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-2">
         {TABS.map((t) => (
           <button
             key={t.key}
@@ -82,6 +84,7 @@ export function ClinicaClient({
         />
       )}
       {tab === 'calc' && <CalculatorsTab />}
+      {tab === 'escores' && <ScoresTab />}
       {tab === 'interacoes' && (
         <InteractionsTab
           drugs={drugs}

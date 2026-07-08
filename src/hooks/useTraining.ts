@@ -176,6 +176,12 @@ export function useTraining(userId: string, timezone: string) {
 
   const startSession = useMutation({
     mutationFn: async (planId: number | null): Promise<number> => {
+      // Fecha qualquer sessão anterior não concluída para não "ficar rolando".
+      await supabase
+        .from('workout_sessions')
+        .delete()
+        .eq('user_id', userId)
+        .eq('completed', false);
       const { data, error } = await supabase
         .from('workout_sessions')
         .insert({

@@ -4,6 +4,7 @@ import { Providers } from './providers';
 import { ServiceWorkerRegister } from '@/components/ServiceWorkerRegister';
 import { BottomNav } from '@/components/BottomNav';
 import { AuthWatcher } from '@/components/AuthWatcher';
+import { GlobalRestTimer } from '@/components/GlobalRestTimer';
 
 export const metadata: Metadata = {
   title: 'Woolves Life OS',
@@ -54,6 +55,7 @@ export default function RootLayout({
             </div>
           </div>
           <BottomNav />
+          <GlobalRestTimer />
         </Providers>
         <ServiceWorkerRegister />
       </body>

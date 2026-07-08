@@ -40,6 +40,12 @@ export interface SetLog {
   rpe: number | null;
   technique: string | null;
   set_type: string;
+  duration_min: number | null;
+  distance_km: number | null;
+}
+
+export function isCardioGroup(group: string | null | undefined): boolean {
+  return group === 'cardio';
 }
 
 export interface LastPerf {
