@@ -9,18 +9,28 @@ export async function signInAction(
   _prev: AuthState,
   formData: FormData,
 ): Promise<AuthState> {
-  const email = String(formData.get('email') ?? '').trim();
+  const identifier = String(formData.get('identifier') ?? '').trim();
   const password = String(formData.get('password') ?? '');
 
-  if (!email || !password) {
-    return { error: 'Informe e-mail e senha.' };
+  if (!identifier || !password) {
+    return { error: 'Informe usuário e senha.' };
   }
 
   const supabase = getSupabaseServerClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) return { error: 'E-mail ou senha inválidos.' };
 
-  // Middleware routes to /onboarding or / based on onboarding status.
+  // Aceita usuário OU e-mail. Se não tiver "@", resolve o e-mail pelo usuário.
+  let email = identifier;
+  if (!identifier.includes('@')) {
+    const { data } = await supabase.rpc('email_for_username', {
+      p_username: identifier,
+    });
+    if (!data) return { error: 'Usuário não encontrado.' };
+    email = String(data);
+  }
+
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) return { error: 'Usuário/e-mail ou senha inválidos.' };
+
   redirect('/');
 }
 
@@ -29,21 +39,40 @@ export async function signUpAction(
   formData: FormData,
 ): Promise<AuthState> {
   const email = String(formData.get('email') ?? '').trim();
+  const username = String(formData.get('username') ?? '').trim();
   const password = String(formData.get('password') ?? '');
 
-  if (!email || password.length < 6) {
+  if (!email.includes('@')) return { error: 'Informe um e-mail válido.' };
+  if (!/^[a-zA-Z0-9_.]{3,20}$/.test(username)) {
+    return { error: 'Usuário: 3 a 20 caracteres (letras, números, _ ou .).' };
+  }
+  if (password.length < 6) {
     return { error: 'Senha deve ter ao menos 6 caracteres.' };
   }
 
   const supabase = getSupabaseServerClient();
-  const { data, error } = await supabase.auth.signUp({ email, password });
-  if (error) return { error: 'Não foi possível criar a conta. Tente outro e-mail.' };
 
-  // If e-mail confirmation is enabled, there is no session yet.
+  const { data: available } = await supabase.rpc('username_available', {
+    p_username: username,
+  });
+  if (available === false) return { error: 'Esse usuário já está em uso.' };
+
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { data: { username } },
+  });
+  if (error) {
+    const m = error.message.toLowerCase();
+    if (m.includes('already') || m.includes('registered') || m.includes('exists')) {
+      return { error: 'Este e-mail já tem conta. Faça login.' };
+    }
+    return { error: `Não foi possível criar a conta: ${error.message}` };
+  }
+
+  // Confirmação de e-mail ativada → ainda não há sessão.
   if (!data.session) {
-    return {
-      notice: 'Conta criada. Confirme pelo link enviado ao seu e-mail e faça login.',
-    };
+    return { notice: 'Conta criada. Confirme pelo link enviado ao seu e-mail e entre.' };
   }
 
   redirect('/onboarding');

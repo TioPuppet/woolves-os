@@ -45,6 +45,9 @@ export async function updateSession(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const isAuthRoute = AUTH_ROUTES.includes(path);
 
+  // OAuth callback must run its code exchange before any session exists.
+  if (path.startsWith('/auth/')) return response;
+
   // Not signed in → only auth routes are allowed.
   if (!user) {
     if (isAuthRoute) return response;

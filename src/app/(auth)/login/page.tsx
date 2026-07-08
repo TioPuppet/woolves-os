@@ -6,7 +6,9 @@ import { signInAction, type AuthState } from '../actions';
 import { ThiingsAsset } from '@/components/ThiingsAsset';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Field } from '@/components/ui/field';
+import { SocialButtons } from '@/components/auth/SocialButtons';
 
 const initial: AuthState = {};
 
@@ -33,14 +35,21 @@ export default function LoginPage() {
       </div>
 
       <form action={formAction} className="flex flex-col gap-4">
-        <Field label="E-mail" htmlFor="email">
-          <Input id="email" name="email" type="email" autoComplete="email" required />
+        <Field label="Usuário" htmlFor="identifier">
+          <Input
+            id="identifier"
+            name="identifier"
+            type="text"
+            autoComplete="username"
+            autoCapitalize="none"
+            placeholder="seu usuário"
+            required
+          />
         </Field>
         <Field label="Senha" htmlFor="password">
-          <Input
+          <PasswordInput
             id="password"
             name="password"
-            type="password"
             autoComplete="current-password"
             required
           />
@@ -52,6 +61,8 @@ export default function LoginPage() {
 
         <SubmitButton />
       </form>
+
+      <SocialButtons />
 
       <p className="text-center text-sm text-muted-foreground">
         Não tem conta?{' '}

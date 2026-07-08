@@ -8,6 +8,10 @@ export const metadata: Metadata = {
   title: 'Woolves Life OS',
   description: 'Seu sistema operacional pessoal gamificado.',
   manifest: '/manifest.webmanifest',
+  icons: {
+    icon: '/icons/icon-192.png',
+    apple: '/apple-touch-icon.png',
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',

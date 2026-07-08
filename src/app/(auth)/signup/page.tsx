@@ -6,7 +6,9 @@ import { signUpAction, type AuthState } from '../actions';
 import { ThiingsAsset } from '@/components/ThiingsAsset';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Field } from '@/components/ui/field';
+import { SocialButtons } from '@/components/auth/SocialButtons';
 
 const initial: AuthState = {};
 
@@ -35,14 +37,24 @@ export default function SignUpPage() {
       </div>
 
       <form action={formAction} className="flex flex-col gap-4">
-        <Field label="E-mail" htmlFor="email">
+        <Field label="E-mail" htmlFor="email" hint="Usado para recuperar a conta.">
           <Input id="email" name="email" type="email" autoComplete="email" required />
         </Field>
-        <Field label="Senha" htmlFor="password" hint="Mínimo de 6 caracteres.">
+        <Field label="Usuário" htmlFor="username" hint="Você vai entrar com ele.">
           <Input
+            id="username"
+            name="username"
+            type="text"
+            autoComplete="username"
+            autoCapitalize="none"
+            placeholder="ex.: cleomarcio"
+            required
+          />
+        </Field>
+        <Field label="Senha" htmlFor="password" hint="Mínimo de 6 caracteres.">
+          <PasswordInput
             id="password"
             name="password"
-            type="password"
             autoComplete="new-password"
             required
           />
@@ -57,6 +69,8 @@ export default function SignUpPage() {
 
         <SubmitButton />
       </form>
+
+      <SocialButtons />
 
       <p className="text-center text-sm text-muted-foreground">
         Já tem conta?{' '}
