@@ -3,6 +3,7 @@ import './globals.css';
 import { Providers } from './providers';
 import { ServiceWorkerRegister } from '@/components/ServiceWorkerRegister';
 import { BottomNav } from '@/components/BottomNav';
+import { AuthWatcher } from '@/components/AuthWatcher';
 
 export const metadata: Metadata = {
   title: 'Woolves Life OS',
@@ -46,6 +47,7 @@ export default function RootLayout({
     <html lang="pt-BR" className="dark">
       <body className="font-sans">
         <Providers>
+          <AuthWatcher />
           <div className="app-aura min-h-screen">
             <div className="mx-auto min-h-screen w-full max-w-app">
               {children}

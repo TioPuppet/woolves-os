@@ -9,7 +9,7 @@
 // Bump this version on each deploy that must invalidate the installed PWA's
 // cached shell (e.g., after fixing baked-in env vars). `activate` purges any
 // cache whose name differs, forcing fresh HTML + JS on the next load.
-const CACHE = 'woolves-shell-v2';
+const CACHE = 'woolves-shell-v3';
 const SHELL = ['/', '/manifest.webmanifest'];
 
 self.addEventListener('install', (event) => {
@@ -32,7 +32,18 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const { request } = event;
-  if (request.method !== 'GET') return; // never intercept mutations in M0
+  if (request.method !== 'GET') return; // never intercept mutations
+
+  // Only ever touch same-origin http(s) requests. This excludes the Supabase
+  // API, CDNs and chrome-extension:// requests (which throw on cache.put).
+  let url;
+  try {
+    url = new URL(request.url);
+  } catch {
+    return;
+  }
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
+  if (url.origin !== self.location.origin) return;
 
   // Navigations: network-first, fall back to cached shell.
   if (request.mode === 'navigate') {
@@ -48,8 +59,10 @@ self.addEventListener('fetch', (event) => {
       (cached) =>
         cached ||
         fetch(request).then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE).then((cache) => cache.put(request, copy));
+          if (res.ok && res.type === 'basic') {
+            const copy = res.clone();
+            caches.open(CACHE).then((cache) => cache.put(request, copy).catch(() => {}));
+          }
           return res;
         }),
     ),
