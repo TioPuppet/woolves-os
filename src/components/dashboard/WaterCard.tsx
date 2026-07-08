@@ -90,9 +90,8 @@ export function WaterCard({
           <button
             key={p.ml}
             type="button"
-            disabled={pending}
             onClick={() => apply(p.ml)}
-            className="press min-h-11 cursor-pointer rounded-xl border border-border bg-muted/50 text-sm font-semibold text-foreground transition-colors hover:bg-muted disabled:opacity-50"
+            className="press min-h-11 cursor-pointer rounded-xl border border-border bg-muted/50 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
           >
             {mode === 'add' ? '+' : '−'}{p.label}
           </button>

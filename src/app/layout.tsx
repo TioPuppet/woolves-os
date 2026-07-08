@@ -21,6 +21,11 @@ export const metadata: Metadata = {
     statusBarStyle: 'black-translucent',
     title: 'Woolves',
   },
+  other: {
+    // Standard equivalent of apple-mobile-web-app-capable (silences the
+    // deprecation warning while keeping the Apple meta for older iOS).
+    'mobile-web-app-capable': 'yes',
+  },
 };
 
 export const viewport: Viewport = {

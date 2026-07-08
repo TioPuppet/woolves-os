@@ -1,21 +1,15 @@
 'use client';
 
-import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { fetchTodaySnapshot, type TodaySnapshot } from '@/lib/today';
-import {
-  enqueueMutation,
-  readQueue,
-  clearQueue,
-} from '@/lib/offline-queue';
 
 const KEY = ['today'] as const;
 
 /**
  * Today loop state: reads the snapshot and exposes optimistic mutations for the
- * quick logs. Water/habit fall back to the IndexedDB offline queue (R5) and are
- * replayed when connectivity returns; check-in is online-only.
+ * quick logs. Each mutation hits the server directly (online-first) — on error
+ * the optimistic update is rolled back.
  */
 export function useToday(timezone: string, initial: TodaySnapshot) {
   const qc = useQueryClient();
@@ -28,34 +22,10 @@ export function useToday(timezone: string, initial: TodaySnapshot) {
     staleTime: 15_000,
   });
 
-  // Replay any queued mutations on mount and whenever we come back online.
-  useEffect(() => {
-    const drain = async () => {
-      const items = await readQueue();
-      if (!items.length) return;
-      for (const it of items) {
-        if (it.kind === 'water') {
-          await supabase.rpc('log_water', { p_ml: it.ml });
-        } else {
-          await supabase.rpc('toggle_habit', {
-            p_key: it.habitKey,
-            p_done: it.done,
-          });
-        }
-      }
-      await clearQueue();
-      qc.invalidateQueries({ queryKey: KEY });
-    };
-    window.addEventListener('online', drain);
-    void drain();
-    return () => window.removeEventListener('online', drain);
-  }, [supabase, qc]);
-
   const logWater = useMutation({
     mutationFn: async (ml: number) => {
-      if (!navigator.onLine) return enqueueMutation({ kind: 'water', ml });
       const { error } = await supabase.rpc('log_water', { p_ml: ml });
-      if (error) await enqueueMutation({ kind: 'water', ml });
+      if (error) throw error;
     },
     onMutate: async (ml: number) => {
       await qc.cancelQueries({ queryKey: KEY });
@@ -98,16 +68,11 @@ export function useToday(timezone: string, initial: TodaySnapshot) {
 
   const toggleHabit = useMutation({
     mutationFn: async (done: boolean) => {
-      if (!navigator.onLine) {
-        return enqueueMutation({ kind: 'habit', habitKey: 'required', done });
-      }
       const { error } = await supabase.rpc('toggle_habit', {
         p_key: 'required',
         p_done: done,
       });
-      if (error) {
-        await enqueueMutation({ kind: 'habit', habitKey: 'required', done });
-      }
+      if (error) throw error;
     },
     onMutate: async (done: boolean) => {
       await qc.cancelQueries({ queryKey: KEY });
