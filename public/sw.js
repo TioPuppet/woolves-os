@@ -6,7 +6,10 @@
  * The offline MUTATION queue (IndexedDB) for quick logs is added in M3 — this
  * file intentionally does not handle POST/mutation requests yet.
  */
-const CACHE = 'woolves-shell-v1';
+// Bump this version on each deploy that must invalidate the installed PWA's
+// cached shell (e.g., after fixing baked-in env vars). `activate` purges any
+// cache whose name differs, forcing fresh HTML + JS on the next load.
+const CACHE = 'woolves-shell-v2';
 const SHELL = ['/', '/manifest.webmanifest'];
 
 self.addEventListener('install', (event) => {

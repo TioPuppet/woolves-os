@@ -9,7 +9,11 @@ export const metadata: Metadata = {
   description: 'Seu sistema operacional pessoal gamificado.',
   manifest: '/manifest.webmanifest',
   icons: {
-    icon: '/icons/icon-192.png',
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/icons/favicon-32.png', type: 'image/png', sizes: '32x32' },
+      { url: '/icons/favicon-16.png', type: 'image/png', sizes: '16x16' },
+    ],
     apple: '/apple-touch-icon.png',
   },
   appleWebApp: {
