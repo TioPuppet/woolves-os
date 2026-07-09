@@ -3,8 +3,8 @@
  * App-shell caching only. Network-first for navigations (fresh UI when online,
  * cached shell when offline); cache-first for static assets.
  *
- * The offline MUTATION queue (IndexedDB) for quick logs is added in M3 — this
- * file intentionally does not handle POST/mutation requests yet.
+ * Mutations are intentionally online-only; this worker never intercepts POST or
+ * other write requests.
  */
 // Bump this version on each deploy that must invalidate the installed PWA's
 // cached shell (e.g., after fixing baked-in env vars). `activate` purges any

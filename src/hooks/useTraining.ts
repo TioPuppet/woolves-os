@@ -15,11 +15,11 @@ export function useTraining(userId: string, timezone: string) {
   const supabase = getSupabaseBrowserClient();
 
   const plans = useQuery({
-    queryKey: ['plans'],
+    queryKey: ['plans', userId],
     queryFn: () => fetchPlans(supabase),
   });
   const exercises = useQuery({
-    queryKey: ['exercises'],
+    queryKey: ['exercises', userId],
     queryFn: () => fetchExercises(supabase),
   });
 

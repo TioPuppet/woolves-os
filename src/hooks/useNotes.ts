@@ -4,14 +4,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { fetchNotes, type Note } from '@/lib/notes';
 
-const KEY = ['notes'] as const;
-
 export function useNotes(userId: string, initial: Note[]) {
   const qc = useQueryClient();
   const supabase = getSupabaseBrowserClient();
+  const key = ['notes', userId] as const;
 
   const query = useQuery({
-    queryKey: KEY,
+    queryKey: key,
     queryFn: () => fetchNotes(supabase),
     initialData: initial,
     staleTime: 10_000,
@@ -27,7 +26,7 @@ export function useNotes(userId: string, initial: Note[]) {
       if (error) throw error;
       return data as Note;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: key }),
   });
 
   const updateNote = useMutation({
@@ -46,12 +45,12 @@ export function useNotes(userId: string, initial: Note[]) {
       const { error } = await supabase.from('notes').delete().eq('id', id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: key }),
   });
 
   return {
     notes: query.data ?? initial,
-    refetch: () => qc.invalidateQueries({ queryKey: KEY }),
+    refetch: () => qc.invalidateQueries({ queryKey: key }),
     createNote,
     updateNote,
     deleteNote,

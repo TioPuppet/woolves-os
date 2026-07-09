@@ -31,7 +31,7 @@ export function TodayClient({
     setMission,
     setMissionDone,
     submitCheckin,
-  } = useToday(profile.timezone, initial);
+  } = useToday(profile.userId, profile.timezone, initial);
   const [sheetOpen, setSheetOpen] = useState(false);
 
   useEffect(() => {

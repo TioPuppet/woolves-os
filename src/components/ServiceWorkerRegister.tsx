@@ -4,8 +4,7 @@ import { useEffect } from 'react';
 
 /**
  * Registers the custom service worker (/public/sw.js) after mount.
- * Kept minimal for M0: app-shell caching only. The offline mutation queue
- * (IndexedDB) for quick logs is added in M3, not here.
+ * Kept minimal: app-shell caching only. Mutations stay online-only.
  */
 export function ServiceWorkerRegister() {
   useEffect(() => {

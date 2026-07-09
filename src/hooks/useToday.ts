@@ -4,19 +4,22 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { fetchTodaySnapshot, type TodaySnapshot } from '@/lib/today';
 
-const KEY = ['today'] as const;
-
 /**
  * Today loop state: reads the snapshot and exposes optimistic mutations for the
  * quick logs. Each mutation hits the server directly (online-first) — on error
  * the optimistic update is rolled back.
  */
-export function useToday(timezone: string, initial: TodaySnapshot) {
+export function useToday(
+  userId: string,
+  timezone: string,
+  initial: TodaySnapshot,
+) {
   const qc = useQueryClient();
   const supabase = getSupabaseBrowserClient();
+  const key = ['today', userId, timezone] as const;
 
   const query = useQuery({
-    queryKey: KEY,
+    queryKey: key,
     queryFn: () => fetchTodaySnapshot(supabase, timezone),
     initialData: initial,
     staleTime: 15_000,
@@ -28,10 +31,10 @@ export function useToday(timezone: string, initial: TodaySnapshot) {
       if (error) throw error;
     },
     onMutate: async (ml: number) => {
-      await qc.cancelQueries({ queryKey: KEY });
-      const prev = qc.getQueryData<TodaySnapshot>(KEY);
+      await qc.cancelQueries({ queryKey: key });
+      const prev = qc.getQueryData<TodaySnapshot>(key);
       if (prev) {
-        qc.setQueryData<TodaySnapshot>(KEY, {
+        qc.setQueryData<TodaySnapshot>(key, {
           ...prev,
           waterMl: prev.waterMl + ml,
         });
@@ -39,9 +42,9 @@ export function useToday(timezone: string, initial: TodaySnapshot) {
       return { prev };
     },
     onError: (_e, _ml, ctx) => {
-      if (ctx?.prev) qc.setQueryData(KEY, ctx.prev);
+      if (ctx?.prev) qc.setQueryData(key, ctx.prev);
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: KEY }),
+    onSettled: () => qc.invalidateQueries({ queryKey: key }),
   });
 
   const removeWater = useMutation({
@@ -50,10 +53,10 @@ export function useToday(timezone: string, initial: TodaySnapshot) {
       if (error) throw error;
     },
     onMutate: async (ml: number) => {
-      await qc.cancelQueries({ queryKey: KEY });
-      const prev = qc.getQueryData<TodaySnapshot>(KEY);
+      await qc.cancelQueries({ queryKey: key });
+      const prev = qc.getQueryData<TodaySnapshot>(key);
       if (prev) {
-        qc.setQueryData<TodaySnapshot>(KEY, {
+        qc.setQueryData<TodaySnapshot>(key, {
           ...prev,
           waterMl: Math.max(0, prev.waterMl - ml),
         });
@@ -61,9 +64,9 @@ export function useToday(timezone: string, initial: TodaySnapshot) {
       return { prev };
     },
     onError: (_e, _ml, ctx) => {
-      if (ctx?.prev) qc.setQueryData(KEY, ctx.prev);
+      if (ctx?.prev) qc.setQueryData(key, ctx.prev);
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: KEY }),
+    onSettled: () => qc.invalidateQueries({ queryKey: key }),
   });
 
   const toggleHabit = useMutation({
@@ -75,15 +78,15 @@ export function useToday(timezone: string, initial: TodaySnapshot) {
       if (error) throw error;
     },
     onMutate: async (done: boolean) => {
-      await qc.cancelQueries({ queryKey: KEY });
-      const prev = qc.getQueryData<TodaySnapshot>(KEY);
-      if (prev) qc.setQueryData<TodaySnapshot>(KEY, { ...prev, habitDone: done });
+      await qc.cancelQueries({ queryKey: key });
+      const prev = qc.getQueryData<TodaySnapshot>(key);
+      if (prev) qc.setQueryData<TodaySnapshot>(key, { ...prev, habitDone: done });
       return { prev };
     },
     onError: (_e, _v, ctx) => {
-      if (ctx?.prev) qc.setQueryData(KEY, ctx.prev);
+      if (ctx?.prev) qc.setQueryData(key, ctx.prev);
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: KEY }),
+    onSettled: () => qc.invalidateQueries({ queryKey: key }),
   });
 
   const logFood = useMutation({
@@ -94,7 +97,7 @@ export function useToday(timezone: string, initial: TodaySnapshot) {
       });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: key }),
   });
 
   const logWeight = useMutation({
@@ -102,7 +105,7 @@ export function useToday(timezone: string, initial: TodaySnapshot) {
       const { error } = await supabase.rpc('log_weight', { p_kg: kg });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: key }),
   });
 
   const setMission = useMutation({
@@ -111,10 +114,10 @@ export function useToday(timezone: string, initial: TodaySnapshot) {
       if (error) throw error;
     },
     onMutate: async (text: string) => {
-      await qc.cancelQueries({ queryKey: KEY });
-      const prev = qc.getQueryData<TodaySnapshot>(KEY);
+      await qc.cancelQueries({ queryKey: key });
+      const prev = qc.getQueryData<TodaySnapshot>(key);
       if (prev) {
-        qc.setQueryData<TodaySnapshot>(KEY, {
+        qc.setQueryData<TodaySnapshot>(key, {
           ...prev,
           missionText: text.trim() || null,
         });
@@ -122,9 +125,9 @@ export function useToday(timezone: string, initial: TodaySnapshot) {
       return { prev };
     },
     onError: (_e, _v, ctx) => {
-      if (ctx?.prev) qc.setQueryData(KEY, ctx.prev);
+      if (ctx?.prev) qc.setQueryData(key, ctx.prev);
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: KEY }),
+    onSettled: () => qc.invalidateQueries({ queryKey: key }),
   });
 
   const setMissionDone = useMutation({
@@ -133,15 +136,15 @@ export function useToday(timezone: string, initial: TodaySnapshot) {
       if (error) throw error;
     },
     onMutate: async (done: boolean) => {
-      await qc.cancelQueries({ queryKey: KEY });
-      const prev = qc.getQueryData<TodaySnapshot>(KEY);
-      if (prev) qc.setQueryData<TodaySnapshot>(KEY, { ...prev, missionDone: done });
+      await qc.cancelQueries({ queryKey: key });
+      const prev = qc.getQueryData<TodaySnapshot>(key);
+      if (prev) qc.setQueryData<TodaySnapshot>(key, { ...prev, missionDone: done });
       return { prev };
     },
     onError: (_e, _v, ctx) => {
-      if (ctx?.prev) qc.setQueryData(KEY, ctx.prev);
+      if (ctx?.prev) qc.setQueryData(key, ctx.prev);
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: KEY }),
+    onSettled: () => qc.invalidateQueries({ queryKey: key }),
   });
 
   const submitCheckin = useMutation({
@@ -157,7 +160,7 @@ export function useToday(timezone: string, initial: TodaySnapshot) {
       });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: key }),
   });
 
   return {

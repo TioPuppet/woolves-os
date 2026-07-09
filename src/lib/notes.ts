@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { throwIfSupabaseError } from '@/lib/supabase/errors';
 
 export interface Note {
   id: number;
@@ -115,9 +116,10 @@ export function noteDate(iso: string): string {
 }
 
 export async function fetchNotes(client: SupabaseClient): Promise<Note[]> {
-  const { data } = await client
+  const { data, error } = await client
     .from('notes')
     .select('id, content, updated_at')
     .order('updated_at', { ascending: false });
+  throwIfSupabaseError(error, 'fetchNotes');
   return (data ?? []) as Note[];
 }

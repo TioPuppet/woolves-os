@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { localDayString } from '@/lib/date';
 import type { DayStatus } from '@/lib/day-status';
+import { throwIfSupabaseError } from '@/lib/supabase/errors';
 
 /** Dynamic per-day snapshot (the parts that change as the user logs). */
 export interface TodaySnapshot {
@@ -21,6 +22,7 @@ export interface TodaySnapshot {
 
 /** Static profile context passed from the server (doesn't change intra-day). */
 export interface TodayProfile {
+  userId: string;
   title: string | null;
   displayName: string | null;
   timezone: string;
@@ -71,6 +73,15 @@ export async function fetchTodaySnapshot(
       .eq('ref_date', date)
       .maybeSingle(),
   ]);
+  throwIfSupabaseError(water.error, 'fetchTodaySnapshot water');
+  throwIfSupabaseError(habit.error, 'fetchTodaySnapshot habit');
+  throwIfSupabaseError(checkin.error, 'fetchTodaySnapshot checkin');
+  throwIfSupabaseError(exp.error, 'fetchTodaySnapshot exp');
+  throwIfSupabaseError(profile.error, 'fetchTodaySnapshot profile');
+  throwIfSupabaseError(food.error, 'fetchTodaySnapshot food');
+  throwIfSupabaseError(spend.error, 'fetchTodaySnapshot spend');
+  throwIfSupabaseError(weight.error, 'fetchTodaySnapshot weight');
+  throwIfSupabaseError(mission.error, 'fetchTodaySnapshot mission');
 
   const waterMl = (water.data ?? []).reduce(
     (sum: number, r: { ml: number }) => sum + r.ml,
@@ -99,4 +110,3 @@ export async function fetchTodaySnapshot(
     missionDone: mission.data?.done === true,
   };
 }
-

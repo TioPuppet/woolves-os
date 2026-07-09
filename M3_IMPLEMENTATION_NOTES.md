@@ -4,6 +4,8 @@
 **Status:** ✅ Completo — 20/20 testes, typecheck limpo, `next build` exit 0.
 **Migrations:** você já aplicou 0003–0006. ✔
 
+> Nota M10: a fila offline descrita neste marco foi removida depois por estar sem uso no app atual. O comportamento vigente é online-first para mutações.
+
 > Este é o marco do PRD para **PARAR e usar por 3 dias reais**.
 
 ---
@@ -15,8 +17,8 @@
   streak) via leituras protegidas por RLS.
 - `hooks/useToday.ts` — TanStack Query com **mutações otimistas** (água, hábito)
   e check-in; invalida e reconcilia com o servidor.
-- `lib/offline-queue.ts` — **fila offline (IndexedDB)** só para água/hábito (R5):
-  enfileira quando offline, **drena automaticamente** ao voltar a conexão.
+- Mutações de água/hábito seguem com atualização otimista; a fila offline
+  antiga foi removida no M10 por não estar integrada ao app atual.
 
 **UI (Cinema Mobile, guiada pelas skills)**
 - `WaterCard` — +250/+500 ml em 1 toque, barra de progresso, otimista.
@@ -44,14 +46,14 @@ funcionais (check, X) usam SVG inline mínimo.
 4. **Check-in:** botão "Check-in da noite" → escolha humor, confirme a missão,
    nota opcional → "Fechar o dia". O card vira "Dia fechado · Concluído/Quebrado"
    e o streak incrementa.
-5. **Offline:** desligue a rede (DevTools → Network → Offline), toque água/hábito
-   (fica otimista), religue a rede → a fila drena sozinha e sincroniza.
+5. **Offline:** comportamento atual é online-first para mutações; validar que
+   erros são reconciliados pelo servidor sem prometer replay offline.
 6. **RLS:** repita com uma 2ª conta e confirme isolamento total dos dados.
 
 ```bash
 cd ~/Desktop/Woolves-Life-OS
 rm -f .git/index.lock
-git add -A && git commit -m "M3: minimum living loop — water/habit/check-in, optimistic UI, offline queue, cinema-mobile polish" && git push
+git add -A && git commit -m "M3: minimum living loop — water/habit/check-in, optimistic UI, cinema-mobile polish" && git push
 ```
 
 ---
@@ -60,8 +62,8 @@ git add -A && git commit -m "M3: minimum living loop — water/habit/check-in, o
 
 - **EXP no toque (não no check-in)** — feedback instantâneo de gamificação; a
   imutabilidade do ledger cobre o caso de desmarcar hábito.
-- **Check-in é online-only** — ação deliberada de fim de dia; só água/hábito vão
-  para a fila offline (conforme PRD).
+- **Mutações online-first** — check-in, água e hábito dependem da reconciliação
+  com o servidor; a fila offline antiga foi removida no M10.
 - **`missionAccomplished` sugerido** no check-in = hábito feito + meta de água
   batida, mas o usuário confirma no toggle.
 

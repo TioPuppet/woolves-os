@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 
 const MOODS: { value: number; label: string }[] = [
@@ -27,6 +27,10 @@ export function CheckinSheet({
   const [mood, setMood] = useState<number | null>(null);
   const [note, setNote] = useState('');
   const [missionDone, setMissionDone] = useState(defaultMissionDone);
+
+  useEffect(() => {
+    if (open) setMissionDone(defaultMissionDone);
+  }, [defaultMissionDone, open]);
 
   if (!open) return null;
 

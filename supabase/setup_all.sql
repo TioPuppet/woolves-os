@@ -1,6 +1,9 @@
 -- Woolves Life OS — full schema setup (M1–M4).
 -- Auto-generated: concatenation of migrations 0001–0008 in order.
--- Run once on a FRESH Supabase project's SQL Editor.
+-- LEGADO/MANUAL: este arquivo cobre apenas M1–M4 e NÃO representa o schema
+-- atual. Para ambiente novo, prefira aplicar os arquivos individuais em
+-- supabase/migrations, em ordem, até a migration mais recente.
+-- Não rode em um banco que já foi aplicado até M10/0036.
 
 
 -- ============================================================
@@ -621,4 +624,3 @@ insert into public.foods (name, kcal_per_100, protein_per_100, is_seed) values
   ('Uva, Rubi, crua', 49, 0.6, true),
   ('Vagem, crua', 25, 1.8, true)
 on conflict do nothing;
-

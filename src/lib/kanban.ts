@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { throwIfSupabaseError } from '@/lib/supabase/errors';
 
 export interface KanbanList {
   id: number;
@@ -70,6 +71,8 @@ export async function fetchBoard(client: SupabaseClient): Promise<Board> {
       .select('id, list_id, title, description, due_date, labels, checklist, position')
       .order('position'),
   ]);
+  throwIfSupabaseError(listsRes.error, 'fetchBoard lists');
+  throwIfSupabaseError(cardsRes.error, 'fetchBoard cards');
   return {
     lists: (listsRes.data ?? []) as KanbanList[],
     cards: ((cardsRes.data ?? []) as Record<string, unknown>[]).map(normalizeCard),

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { localDayString } from '@/lib/date';
 import type { ThiingsAssetKey } from '@/lib/thiings-registry';
+import { throwIfSupabaseError } from '@/lib/supabase/errors';
 
 export interface Transaction {
   id: number;
@@ -75,11 +76,12 @@ export async function fetchFinanceToday(
   limit: number | null,
 ): Promise<FinanceToday> {
   const date = localDayString(timezone);
-  const { data } = await client
+  const { data, error } = await client
     .from('transactions')
     .select('id, ref_date, type, amount_brl, category, note')
     .eq('ref_date', date)
     .order('created_at', { ascending: false });
+  throwIfSupabaseError(error, 'fetchFinanceToday');
   const txs = (data ?? []) as Transaction[];
   const spent = txs
     .filter((t) => t.type === 'expense')
@@ -155,26 +157,29 @@ export function dayLabel(dateStr: string): string {
 
 export async function fetchMonth(client: SupabaseClient, k: MonthKey): Promise<Transaction[]> {
   const { first, last } = monthRange(k);
-  const { data } = await client
+  const { data, error } = await client
     .from('transactions')
     .select('id, ref_date, type, amount_brl, category, note')
     .gte('ref_date', first)
     .lte('ref_date', last)
     .order('ref_date', { ascending: false })
     .order('created_at', { ascending: false });
+  throwIfSupabaseError(error, 'fetchMonth');
   return (data ?? []) as Transaction[];
 }
 
 export async function fetchBudgets(client: SupabaseClient): Promise<Budget[]> {
-  const { data } = await client.from('category_budgets').select('category, monthly_limit_brl');
+  const { data, error } = await client.from('category_budgets').select('category, monthly_limit_brl');
+  throwIfSupabaseError(error, 'fetchBudgets');
   return (data ?? []) as Budget[];
 }
 
 export async function fetchRecurring(client: SupabaseClient): Promise<Recurring[]> {
-  const { data } = await client
+  const { data, error } = await client
     .from('recurring_transactions')
     .select('id, type, amount_brl, category, note, day_of_month, active')
     .order('day_of_month');
+  throwIfSupabaseError(error, 'fetchRecurring');
   return (data ?? []) as Recurring[];
 }
 
@@ -186,10 +191,11 @@ export async function fetchTrend(
   const now = currentMonthKey(timezone);
   const start = shiftMonth(now, -(monthsBack - 1));
   const { first } = monthRange(start);
-  const { data } = await client
+  const { data, error } = await client
     .from('transactions')
     .select('ref_date, type, amount_brl')
     .gte('ref_date', first);
+  throwIfSupabaseError(error, 'fetchTrend');
   const rows = (data ?? []) as { ref_date: string; type: string; amount_brl: number }[];
   const map = new Map<string, { income: number; expense: number }>();
   for (let i = 0; i < monthsBack; i++) {

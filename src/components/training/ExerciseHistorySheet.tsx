@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { throwIfSupabaseError } from '@/lib/supabase/errors';
 
 interface Row {
   load_kg: number | null;
@@ -23,11 +24,13 @@ function epley(load: number, reps: number): number {
 
 export function ExerciseHistorySheet({
   open,
+  userId,
   exerciseId,
   exerciseName,
   onClose,
 }: {
   open: boolean;
+  userId: string;
   exerciseId: number;
   exerciseName: string;
   onClose: () => void;
@@ -35,14 +38,15 @@ export function ExerciseHistorySheet({
   const supabase = getSupabaseBrowserClient();
 
   const history = useQuery({
-    queryKey: ['exercise-history', exerciseId],
+    queryKey: ['exercise-history', userId, exerciseId],
     enabled: open,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('set_logs')
         .select('load_kg, reps, set_type, workout_sessions!inner(created_at, ref_date, completed)')
         .eq('exercise_id', exerciseId)
         .eq('workout_sessions.completed', true);
+      throwIfSupabaseError(error, 'exerciseHistory');
       return (data ?? []) as unknown as Row[];
     },
   });

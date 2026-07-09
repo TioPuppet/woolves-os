@@ -623,6 +623,7 @@ export function TrainingClient({
           {historyFor ? (
             <ExerciseHistorySheet
               open
+              userId={userId}
               exerciseId={historyFor.id}
               exerciseName={historyFor.name}
               onClose={() => setHistoryFor(null)}

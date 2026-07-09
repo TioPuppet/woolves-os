@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { throwIfSupabaseError } from '@/lib/supabase/errors';
 
 export type Severity = 'contraindicada' | 'grave' | 'moderada' | 'leve';
 
@@ -43,17 +44,19 @@ export const INTERACTION_FIELDS =
   'id, drug_a, drug_b, severity, effect, management, source, source_url';
 
 export async function fetchDrugs(client: SupabaseClient): Promise<Drug[]> {
-  const { data } = await client.from('drugs').select(DRUG_FIELDS).order('name');
+  const { data, error } = await client.from('drugs').select(DRUG_FIELDS).order('name');
+  throwIfSupabaseError(error, 'fetchDrugs');
   return (data ?? []) as Drug[];
 }
 
 export async function fetchInteractions(
   client: SupabaseClient,
 ): Promise<DrugInteraction[]> {
-  const { data } = await client
+  const { data, error } = await client
     .from('drug_interactions')
     .select(INTERACTION_FIELDS)
     .order('severity');
+  throwIfSupabaseError(error, 'fetchInteractions');
   return (data ?? []) as DrugInteraction[];
 }
 

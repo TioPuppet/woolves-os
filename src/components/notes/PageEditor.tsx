@@ -216,8 +216,8 @@ export function PageEditor({
                 aria-label={b.checked ? 'Desmarcar' : 'Marcar'}
                 className="press mt-[0.45rem] flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded border"
                 style={{
-                  borderColor: b.checked ? 'hsl(var(--status-perfect))' : 'hsl(var(--border))',
-                  backgroundColor: b.checked ? 'hsl(var(--status-perfect))' : 'transparent',
+                  borderColor: b.checked ? 'hsl(var(--status-completed))' : 'hsl(var(--border))',
+                  backgroundColor: b.checked ? 'hsl(var(--status-completed))' : 'transparent',
                   height: '1.1rem',
                   width: '1.1rem',
                 }}

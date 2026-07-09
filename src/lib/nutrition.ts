@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { localDayString } from '@/lib/date';
+import { throwIfSupabaseError } from '@/lib/supabase/errors';
 
 export type MealType = 'cafe' | 'almoco' | 'jantar' | 'lanche';
 
@@ -51,11 +52,12 @@ export async function fetchDiary(
   timezone: string,
 ): Promise<Diary> {
   const date = localDayString(timezone);
-  const { data } = await client
+  const { data, error } = await client
     .from('food_logs')
     .select('id, food_id, grams, kcal, protein_g, carb_g, fat_g, meal_type, foods(name)')
     .eq('ref_date', date)
     .order('created_at');
+  throwIfSupabaseError(error, 'fetchDiary');
 
   const rows = (data ?? []) as Record<string, unknown>[];
   const entries: FoodEntry[] = rows.map((r) => {

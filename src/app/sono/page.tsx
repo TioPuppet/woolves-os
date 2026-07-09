@@ -19,5 +19,5 @@ export default async function SonoPage() {
   const timezone = profile?.timezone ?? 'America/Sao_Paulo';
   const initial = await fetchSleepData(supabase, timezone);
 
-  return <SleepClient timezone={timezone} initial={initial} />;
+  return <SleepClient userId={user.id} timezone={timezone} initial={initial} />;
 }

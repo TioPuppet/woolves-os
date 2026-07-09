@@ -69,9 +69,11 @@ $$;
 revoke all on function public.username_available(text) from public;
 grant execute on function public.username_available(text) to anon, authenticated;
 
--- Define um usuário inicial para a conta já existente do Dr. Cleomárcio,
--- para que o login por usuário funcione de imediato.
-update public.profiles
-   set username = 'cleomarcio'
- where id = '4138c1c7-fe68-4a84-8d25-987535904e7a'
-   and username is null;
+-- Ativa o módulo clínico e um usuário inicial para a conta do Dr. Cleomárcio,
+-- casando por E-MAIL (robusto a recriação de conta / id novo).
+update public.profiles p
+   set is_clinician = true,
+       username = coalesce(p.username, 'cleomarcio')
+  from auth.users u
+ where u.id = p.id
+   and u.email = 'ocleomarciomiguel@gmail.com';

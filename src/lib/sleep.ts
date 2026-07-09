@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { localDayString, shiftLocalDay } from '@/lib/date';
+import { throwIfSupabaseError } from '@/lib/supabase/errors';
 
 export const SLEEP_GOAL_HOURS = 7;
 
@@ -29,12 +30,13 @@ export async function fetchSleepData(
   const today = localDayString(timezone);
   const weekAgo = shiftLocalDay(today, -6);
 
-  const { data } = await client
+  const { data, error } = await client
     .from('sleep_logs')
     .select('ref_date, hours, quality')
     .gte('ref_date', weekAgo)
     .lte('ref_date', today)
     .order('ref_date');
+  throwIfSupabaseError(error, 'fetchSleepData');
 
   const week = (data ?? []) as SleepEntry[];
   return {

@@ -352,7 +352,7 @@ function CardModal({
         </div>
         {checklist.length > 0 && (
           <div className="mb-2 h-1.5 w-full overflow-hidden rounded-full bg-card">
-            <div className="h-full rounded-full bg-status-perfect transition-all" style={{ width: `${pct}%` }} />
+            <div className="h-full rounded-full bg-status-completed transition-all" style={{ width: `${pct}%` }} />
           </div>
         )}
         <div className="mb-2 flex flex-col gap-1.5">
@@ -366,8 +366,8 @@ function CardModal({
                 aria-label={it.done ? 'Desmarcar' : 'Marcar'}
                 className="press flex h-5 w-5 shrink-0 items-center justify-center rounded-md border"
                 style={{
-                  borderColor: it.done ? 'hsl(var(--status-perfect))' : 'hsl(var(--border))',
-                  backgroundColor: it.done ? 'hsl(var(--status-perfect))' : 'transparent',
+                  borderColor: it.done ? 'hsl(var(--status-completed))' : 'hsl(var(--border))',
+                  backgroundColor: it.done ? 'hsl(var(--status-completed))' : 'transparent',
                 }}
               >
                 {it.done && (
@@ -470,8 +470,12 @@ export function KanbanBoard({ userId, initial }: { userId: string; initial: Boar
   useEffect(() => {
     if (seeded.current || lists.length > 0) return;
     seeded.current = true;
-    (async () => {
-      for (const t of DEFAULT_LISTS) await addList.mutateAsync(t);
+    void (async () => {
+      try {
+        for (const t of DEFAULT_LISTS) await addList.mutateAsync(t);
+      } catch {
+        seeded.current = false;
+      }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lists.length]);
@@ -496,7 +500,12 @@ export function KanbanBoard({ userId, initial }: { userId: string; initial: Boar
         updates.push({ id: parseId(c), list_id: listId, position: idx }),
       );
     }
-    if (updates.length) savePositions.mutate(updates);
+    if (updates.length) {
+      const fallback = buildContainers(lists, cards);
+      savePositions.mutate(updates, {
+        onError: () => setContainers(fallback),
+      });
+    }
   };
 
   const onDragStart = (e: DragStartEvent) => {

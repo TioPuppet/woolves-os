@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { throwIfSupabaseError } from '@/lib/supabase/errors';
 
 export interface Exercise {
   id: number;
@@ -58,12 +59,13 @@ export interface LastPerf {
 
 /** Plans with their ordered exercises. */
 export async function fetchPlans(client: SupabaseClient): Promise<Plan[]> {
-  const { data } = await client
+  const { data, error } = await client
     .from('workout_plans')
     .select(
       'id, name, muscle_groups, plan_exercises(id, exercise_id, order_idx, muscle_group, target_sets, target_reps, rest_seconds, technique, exercise:exercises(id, name, muscle_group))',
     )
     .order('created_at', { ascending: true });
+  throwIfSupabaseError(error, 'fetchPlans');
   const plans = (data ?? []) as unknown as Plan[];
   plans.forEach((p) =>
     p.plan_exercises?.sort((a, b) => a.order_idx - b.order_idx),
@@ -75,10 +77,11 @@ export async function fetchPlans(client: SupabaseClient): Promise<Plan[]> {
 export async function fetchExercises(
   client: SupabaseClient,
 ): Promise<Exercise[]> {
-  const { data } = await client
+  const { data, error } = await client
     .from('exercises')
     .select('id, name, muscle_group')
     .order('name');
+  throwIfSupabaseError(error, 'fetchExercises');
   return (data ?? []) as Exercise[];
 }
 
@@ -87,7 +90,7 @@ export async function fetchActiveSession(
   client: SupabaseClient,
   date: string,
 ): Promise<ActiveSession | null> {
-  const { data } = await client
+  const { data, error } = await client
     .from('workout_sessions')
     .select('id, plan_id, ref_date')
     .eq('ref_date', date)
@@ -95,5 +98,6 @@ export async function fetchActiveSession(
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
+  throwIfSupabaseError(error, 'fetchActiveSession');
   return (data as ActiveSession | null) ?? null;
 }

@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { ThiingsAsset } from '@/components/ThiingsAsset';
 import { type ThiingsAssetKey } from '@/lib/thiings-registry';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { throwIfSupabaseError } from '@/lib/supabase/errors';
 import { cn } from '@/lib/utils';
 
 const HIDDEN = ['/login', '/signup', '/onboarding'];
@@ -74,13 +75,16 @@ export function BottomNav() {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) return;
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .select('is_clinician')
         .eq('id', user.id)
         .single();
+      throwIfSupabaseError(error, 'bottomNav profile');
       if (alive && data?.is_clinician) setIsClinician(true);
-    })();
+    })().catch(() => {
+      if (alive) setIsClinician(false);
+    });
     return () => {
       alive = false;
     };

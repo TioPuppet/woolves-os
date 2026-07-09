@@ -21,9 +21,10 @@ export async function signInAction(
   // Aceita usuário OU e-mail. Se não tiver "@", resolve o e-mail pelo usuário.
   let email = identifier;
   if (!identifier.includes('@')) {
-    const { data } = await supabase.rpc('email_for_username', {
+    const { data, error } = await supabase.rpc('email_for_username', {
       p_username: identifier,
     });
+    if (error) return { error: 'Não foi possível validar esse usuário agora.' };
     if (!data) return { error: 'Usuário não encontrado.' };
     email = String(data);
   }
@@ -52,9 +53,12 @@ export async function signUpAction(
 
   const supabase = getSupabaseServerClient();
 
-  const { data: available } = await supabase.rpc('username_available', {
+  const { data: available, error: availabilityError } = await supabase.rpc('username_available', {
     p_username: username,
   });
+  if (availabilityError) {
+    return { error: 'Não foi possível validar esse usuário agora.' };
+  }
   if (available === false) return { error: 'Esse usuário já está em uso.' };
 
   const { data, error } = await supabase.auth.signUp({

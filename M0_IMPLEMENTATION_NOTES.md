@@ -3,6 +3,8 @@
 **Milestone:** Project setup · PWA base · design tokens · `ThiingsAsset` + registry
 **Status:** ✅ Complete — typecheck clean (`tsc --noEmit`, exit 0), production build clean (`next build`, exit 0, `/` prerendered static).
 
+> Nota M10: a fila offline de mutações foi removida por estar sem uso. O service worker atual continua GET-only e as mutações são online-first.
+
 ---
 
 ## What was built
@@ -34,7 +36,7 @@
 
 **PWA base**
 - `public/manifest.webmanifest` — standalone, portrait, dark theme, pt-BR, maskable icons.
-- `public/sw.js` — app-shell cache, network-first navigations, cache-first assets. **GET-only** — the offline mutation queue (IndexedDB) for quick logs is deliberately deferred to **M3**.
+- `public/sw.js` — app-shell cache, network-first navigations, cache-first assets. **GET-only** — mutações são online-first.
 - Placeholder PWA icons (192/512) generated so install works today.
 
 ---
@@ -62,7 +64,7 @@ Also replace the placeholder PWA icons in `/public/icons/` (`icon-192.png`, `ico
 
 ## Decisions made
 
-- **Custom SW instead of `next-pwa`** — avoids App Router / TS-strict friction; keeps M0 dependency-light and gives full control for the M3 offline queue.
+- **Custom SW instead of `next-pwa`** — avoids App Router / TS-strict friction; keeps M0 dependency-light and full control over the app-shell cache.
 - **Plain `<img>` in ThiingsAsset** (not `next/image`) — makes the missing-file `onError` fallback trivial and needs no remote-loader config; assets are local, small, static.
 - **EXP constants live client-side but grants do not** — display/estimates only; authority stays on the server (R2).
 

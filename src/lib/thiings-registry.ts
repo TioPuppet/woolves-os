@@ -44,6 +44,7 @@ export type ThiingsAssetKey =
   | 'tecnologia'
   | 'today'
   | 'transporte'
+  | 'trophy'
   | 'video'
   | 'water'
   | 'weight'
@@ -55,7 +56,6 @@ export type ThiingsAssetKey =
   | 'ombro'
   | 'biceps'
   | 'triceps'
-  | 'perna'
   | 'perna-quadriceps'
   | 'perna-posterior'
   | 'gluteo'
@@ -112,6 +112,7 @@ export const THIINGS_REGISTRY: Record<ThiingsAssetKey, ThiingsAssetEntry> = {
   tecnologia: entry('tecnologia', 'Tecnologia', 'Despesas com tecnologia'),
   today: entry('today', 'Hoje', 'Dashboard do dia'),
   transporte: entry('transporte', 'Transporte', 'Despesas de transporte'),
+  trophy: entry('trophy', 'Troféu', 'Conquistas / marcos'),
   video: entry('video', 'Vídeo', 'Conteúdo em vídeo'),
   water: entry('water', 'Água', 'Quick log de água'),
   weight: entry('weight', 'Peso', 'Quick log de peso'),
@@ -122,7 +123,6 @@ export const THIINGS_REGISTRY: Record<ThiingsAssetKey, ThiingsAssetEntry> = {
   ombro: entry('ombro', 'Ombro', 'Grupo muscular: ombro'),
   biceps: entry('biceps', 'Bíceps', 'Grupo muscular: bíceps'),
   triceps: entry('triceps', 'Tríceps', 'Grupo muscular: tríceps'),
-  perna: entry('perna', 'Perna', 'Grupo muscular: perna'),
   'perna-quadriceps': entry('perna-quadriceps', 'Quadríceps', 'Grupo muscular: quadríceps'),
   'perna-posterior': entry('perna-posterior', 'Posterior', 'Grupo muscular: posterior de coxa'),
   gluteo: entry('gluteo', 'Glúteo', 'Grupo muscular: glúteo'),

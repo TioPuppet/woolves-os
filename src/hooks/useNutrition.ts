@@ -4,8 +4,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { fetchDiary, type Diary, type MealType } from '@/lib/nutrition';
 
-const KEY = ['diary'] as const;
-
 export interface NewFood {
   name: string;
   kcal_per_100: number;
@@ -17,16 +15,17 @@ export interface NewFood {
 export function useNutrition(userId: string, timezone: string, initial: Diary) {
   const qc = useQueryClient();
   const supabase = getSupabaseBrowserClient();
+  const key = ['diary', userId, timezone] as const;
 
   const query = useQuery({
-    queryKey: KEY,
+    queryKey: key,
     queryFn: () => fetchDiary(supabase, timezone),
     initialData: initial,
     staleTime: 10_000,
   });
 
   const invalidate = () => {
-    qc.invalidateQueries({ queryKey: KEY });
+    qc.invalidateQueries({ queryKey: key });
     qc.invalidateQueries({ queryKey: ['today'] }); // keep dashboard macros/EXP fresh
   };
 

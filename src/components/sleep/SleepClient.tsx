@@ -78,13 +78,15 @@ function Ring({
 }
 
 export function SleepClient({
+  userId,
   timezone,
   initial,
 }: {
+  userId: string;
   timezone: string;
   initial: SleepData;
 }) {
-  const { sleep, logSleep } = useSleep(timezone, initial);
+  const { sleep, logSleep } = useSleep(userId, timezone, initial);
 
   const [hours, setHours] = useState(sleep.today?.hours?.toString() ?? '');
   const [quality, setQuality] = useState<number | null>(
@@ -187,7 +189,7 @@ export function SleepClient({
         <section className="surface-2 flex flex-col gap-3 rounded-3xl p-5">
           <p className="text-sm font-medium">Últimos 7 dias</p>
           <div className="flex h-28 items-end justify-between gap-2">
-            {days.map((d, i) => {
+            {days.map((d) => {
               const h = byDate.get(d) ?? 0;
               const pct = Math.round((h / maxH) * 100);
               const isToday = d === today;

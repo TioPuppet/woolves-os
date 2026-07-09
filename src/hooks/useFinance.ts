@@ -34,25 +34,25 @@ export function useFinance(
   const isCurrent = monthKey.year === cur.year && monthKey.month === cur.month;
 
   const monthQ = useQuery({
-    queryKey: ['finance-month', monthKey.year, monthKey.month],
+    queryKey: ['finance-month', userId, monthKey.year, monthKey.month],
     queryFn: () => fetchMonth(supabase, monthKey),
     initialData: isCurrent ? initial.transactions : undefined,
     staleTime: 10_000,
   });
   const budgetsQ = useQuery({
-    queryKey: ['finance-budgets'],
+    queryKey: ['finance-budgets', userId],
     queryFn: () => fetchBudgets(supabase),
     initialData: initial.budgets,
     staleTime: 30_000,
   });
   const recurringQ = useQuery({
-    queryKey: ['finance-recurring'],
+    queryKey: ['finance-recurring', userId],
     queryFn: () => fetchRecurring(supabase),
     initialData: initial.recurring,
     staleTime: 30_000,
   });
   const trendQ = useQuery({
-    queryKey: ['finance-trend'],
+    queryKey: ['finance-trend', userId, timezone],
     queryFn: () => fetchTrend(supabase, timezone),
     initialData: initial.trend,
     staleTime: 30_000,

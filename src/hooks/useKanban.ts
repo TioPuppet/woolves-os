@@ -9,8 +9,6 @@ import {
   type ChecklistItem,
 } from '@/lib/kanban';
 
-const KEY = ['board'] as const;
-
 export type CardPatch = Partial<{
   title: string;
   description: string | null;
@@ -22,15 +20,16 @@ export type CardPatch = Partial<{
 export function useKanban(userId: string, initial: Board) {
   const qc = useQueryClient();
   const supabase = getSupabaseBrowserClient();
+  const key = ['board', userId] as const;
 
   const query = useQuery({
-    queryKey: KEY,
+    queryKey: key,
     queryFn: () => fetchBoard(supabase),
     initialData: initial,
     staleTime: 10_000,
   });
 
-  const invalidate = () => qc.invalidateQueries({ queryKey: KEY });
+  const invalidate = () => qc.invalidateQueries({ queryKey: key });
 
   // ---- Lists ----
   const addList = useMutation({
@@ -103,7 +102,7 @@ export function useKanban(userId: string, initial: Board) {
     mutationFn: async (
       updates: { id: number; list_id: number; position: number }[],
     ) => {
-      await Promise.all(
+      const results = await Promise.all(
         updates.map((u) =>
           supabase
             .from('kanban_cards')
@@ -111,6 +110,8 @@ export function useKanban(userId: string, initial: Board) {
             .eq('id', u.id),
         ),
       );
+      const failed = results.find((r) => r.error);
+      if (failed?.error) throw failed.error;
     },
     onSuccess: invalidate,
   });

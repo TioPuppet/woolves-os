@@ -1,6 +1,11 @@
 -- ============================================================================
 -- Woolves Life OS — migrations pendentes (0028 a 0034), em ordem.
--- Cole TUDO isto de uma vez no SQL Editor do Supabase e rode.
+-- LEGADO/MANUAL: mantenha apenas como referência de aplicação antiga.
+-- A fonte oficial agora são os arquivos individuais em supabase/migrations,
+-- incluindo as correções posteriores até 0036.
+-- Se você já aplicou até 0036, NÃO rode este arquivo novamente.
+-- Cole TUDO isto de uma vez no SQL Editor do Supabase e rode apenas se estiver
+-- recuperando um ambiente antigo que parou em 0027.
 -- Idempotente: seguro mesmo se parte já estiver aplicada.
 -- ============================================================================
 
@@ -1054,12 +1059,14 @@ $$;
 revoke all on function public.username_available(text) from public;
 grant execute on function public.username_available(text) to anon, authenticated;
 
--- Define um usuário inicial para a conta já existente do Dr. Cleomárcio,
--- para que o login por usuário funcione de imediato.
-update public.profiles
-   set username = 'cleomarcio'
- where id = '4138c1c7-fe68-4a84-8d25-987535904e7a'
-   and username is null;
+-- Ativa o módulo clínico e um usuário inicial para a conta do Dr. Cleomárcio,
+-- casando por E-MAIL (robusto a recriação de conta / id novo).
+update public.profiles p
+   set is_clinician = true,
+       username = coalesce(p.username, 'cleomarcio')
+  from auth.users u
+ where u.id = p.id
+   and u.email = 'ocleomarciomiguel@gmail.com';
 
 
 -- ===================== 0034_fix_fk_cascade.sql =====================
@@ -1110,4 +1117,3 @@ alter table public.plan_exercises
 alter table public.set_logs
   add constraint set_logs_exercise_id_fkey
   foreign key (exercise_id) references public.exercises (id) on delete cascade;
-

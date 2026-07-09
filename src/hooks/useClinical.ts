@@ -16,15 +16,15 @@ import {
 export function useDrugs(userId: string, initial: Drug[]) {
   const qc = useQueryClient();
   const supabase = getSupabaseBrowserClient();
-  const KEY = ['drugs'] as const;
+  const key = ['drugs', userId] as const;
 
   const query = useQuery({
-    queryKey: KEY,
+    queryKey: key,
     queryFn: () => fetchDrugs(supabase),
     initialData: initial,
     staleTime: 15_000,
   });
-  const invalidate = () => qc.invalidateQueries({ queryKey: KEY });
+  const invalidate = () => qc.invalidateQueries({ queryKey: key });
 
   const createDrug = useMutation({
     mutationFn: async (draft: DrugDraft) => {
@@ -62,15 +62,15 @@ export function useDrugs(userId: string, initial: Drug[]) {
 export function useInteractions(userId: string, initial: DrugInteraction[]) {
   const qc = useQueryClient();
   const supabase = getSupabaseBrowserClient();
-  const KEY = ['interactions'] as const;
+  const key = ['interactions', userId] as const;
 
   const query = useQuery({
-    queryKey: KEY,
+    queryKey: key,
     queryFn: () => fetchInteractions(supabase),
     initialData: initial,
     staleTime: 15_000,
   });
-  const invalidate = () => qc.invalidateQueries({ queryKey: KEY });
+  const invalidate = () => qc.invalidateQueries({ queryKey: key });
 
   const createInteraction = useMutation({
     mutationFn: async (draft: InteractionDraft) => {

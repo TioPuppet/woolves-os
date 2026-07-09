@@ -16,7 +16,7 @@ _Última auditoria: M9 · QA final. Marque `[x]` ao validar cada item no ambient
 
 - [x] Next.js elevado para **14.2.35** (último patch da linha 14.2); vulnerabilidades **críticas resolvidas** (7 → 2).
 - [ ] _Backlog:_ migração para Next 15/16 resolve as 2 restantes (1 high / 1 moderate). São majors com breaking changes — agendar pós-MVP. Aplicabilidade real ao app é baixa (sem WebSocket upgrades, App Router e não Pages i18n, sem CSS de terceiro no build).
-- [x] **RLS habilitado em 22/22 tabelas**, cada uma com policy escopada a `auth.uid()`.
+- [x] **RLS habilitado em 27/27 tabelas**, cada uma com policy escopada a `auth.uid()` ou herança por tabela-pai.
 - [x] Tabelas de referência (`foods`, `exercises`): `SELECT` = `is_seed or user_id=auth.uid()`; escrita restrita ao dono (seed protegido).
 - [x] Tabelas-filhas (`meal_items`, `plan_exercises`, `set_logs`): propriedade herdada do pai via `EXISTS`.
 - [x] Ledger/logs (`exp_events`, `water_logs`, `habit_logs`, `checkins`): só `SELECT`; escrita exclusivamente via RPC.
@@ -83,6 +83,15 @@ _Última auditoria: M9 · QA final. Marque `[x]` ao validar cada item no ambient
 - [x] Auditoria RLS completa (sem gaps).
 - [x] Script de teste de isolamento (`supabase/tests/rls_isolation.sql`).
 - [x] Este checklist de aceite.
+
+### M10 — Estabilização
+- [x] Correção visual no editor de páginas (`--status-completed`).
+- [x] Migration `0036` para padronizar privilégios das RPCs de missão diária.
+- [x] Deploy docs atualizados até `0036`.
+- [x] `npm run lint` não interativo via guarda rígida de TypeScript.
+- [x] Caches de dados client-side escopados por usuário/timezone nos fluxos principais.
+- [x] Smoke visual mobile local em login/cadastro.
+- [ ] Configurar ESLint completo quando houver autorização para instalar dependências de lint.
 
 ---
 

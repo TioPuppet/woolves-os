@@ -190,7 +190,7 @@ estados; conferir badge e layout no viewport iPhone.
 mínimo que já muda comportamento.
 
 **Skills:** supabase-postgres-best-practices (RPC/ledger/RLS),
-vercel-react-best-practices (UI otimista + fila offline).
+vercel-react-best-practices (UI otimista).
 
 **Passo a passo — banco primeiro**
 
@@ -228,8 +228,8 @@ vercel-react-best-practices (UI otimista + fila offline).
    "Beba {meta} de água + cumpra {hábito}"). Sem IA ainda.
 8. **Quick logs ≤3 toques** — botão de água (+250/+500 ml) e toggle de hábito,
    com **mutação otimista** e rollback em erro.
-9. **Fila offline (IndexedDB)** — só para água/hábito/despesa: enfileira
-   mutação quando offline, drena ao voltar. Integrar no service worker do M0.
+9. **Online-first para mutações** — manter água/hábito com UI otimista e
+   rollback/reconciliação em erro. A fila offline antiga foi removida no M10.
 10. **Night check-in** — sheet com mood 1–5 + nota; fecha o dia e mostra EXP
     ganho + status final.
 

@@ -16,7 +16,7 @@ Cada `git push` faz redeploy automático.
 
 ## 2. Banco de dados (Supabase)
 
-Aplique **todas** as migrations até a mais recente no SQL Editor (a app aponta para o mesmo banco):
+Aplique **todas** as migrations em ordem até a mais recente no SQL Editor (a app aponta para o mesmo banco). Se o banco já está aplicado até `0035`, rode apenas a `0036`:
 
 ```
 0028_daily_mission.sql
@@ -25,6 +25,9 @@ Aplique **todas** as migrations até a mais recente no SQL Editor (a app aponta 
 0031_taco_full.sql
 0032_finance_v2.sql
 0033_auth_username.sql
+0034_fix_fk_cascade.sql
+0035_cardio.sql
+0036_harden_daily_mission_rpcs.sql
 ```
 
 ## 3. Autenticação (Supabase → Authentication)
@@ -40,7 +43,7 @@ Aplique **todas** as migrations até a mais recente no SQL Editor (a app aponta 
 
 - **Cadastro**: e-mail (recuperação) + **usuário** + senha.
 - **Login**: pelo **usuário** (ou e-mail). O campo de senha tem botão de **ver**.
-- A conta do Dr. Cleomárcio já recebe o usuário `cleomarcio` na migration 0033.
+- A conta do Dr. Cleomárcio já recebe o usuário `cleomarcio` e acesso clínico na migration 0033.
 - "Não foi possível criar a conta / e-mail já tem conta" → use **Entrar**.
 
 ## 5. Instalar no iPhone

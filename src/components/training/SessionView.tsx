@@ -9,6 +9,7 @@ import { muscleAssetKey, muscleLabel } from '@/lib/muscles';
 import { ThiingsAsset } from '@/components/ThiingsAsset';
 import { startRest, clearRest } from '@/lib/rest-timer';
 import { cn } from '@/lib/utils';
+import { throwIfSupabaseError } from '@/lib/supabase/errors';
 
 const REST_DEFAULT = 90;
 
@@ -131,6 +132,7 @@ function CardioBlock({
 /* ----------------------------------------------------------- Strength ------ */
 
 function ExerciseBlock({
+  userId,
   planExercise,
   sets,
   techniques,
@@ -140,6 +142,7 @@ function ExerciseBlock({
   onDeleteTechnique,
   logging,
 }: {
+  userId: string;
   planExercise: PlanExercise;
   sets: SetLog[];
   techniques: CustomTechnique[];
@@ -153,9 +156,10 @@ function ExerciseBlock({
   const exId = planExercise.exercise_id;
 
   const lastPerf = useQuery({
-    queryKey: ['last-perf', exId],
+    queryKey: ['last-perf', userId, exId],
     queryFn: async () => {
-      const { data } = await supabase.rpc('last_exercise_performance', { p_exercise_id: exId });
+      const { data, error } = await supabase.rpc('last_exercise_performance', { p_exercise_id: exId });
+      throwIfSupabaseError(error, 'lastExercisePerformance');
       return (data ?? []) as LastPerf[];
     },
   });
@@ -337,29 +341,32 @@ export function SessionView({
   const supabase = getSupabaseBrowserClient();
 
   const sessionSets = useQuery({
-    queryKey: ['session-sets', sessionId],
+    queryKey: ['session-sets', userId, sessionId],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('set_logs')
         .select('id, exercise_id, set_no, reps, load_kg, rpe, technique, set_type, duration_min, distance_km')
         .eq('session_id', sessionId)
         .order('set_no');
+      throwIfSupabaseError(error, 'sessionSets');
       return (data ?? []) as SetLog[];
     },
   });
 
   const sessionMeta = useQuery({
-    queryKey: ['session-meta', sessionId],
+    queryKey: ['session-meta', userId, sessionId],
     queryFn: async () => {
-      const { data } = await supabase.from('workout_sessions').select('created_at').eq('id', sessionId).maybeSingle();
+      const { data, error } = await supabase.from('workout_sessions').select('created_at').eq('id', sessionId).maybeSingle();
+      throwIfSupabaseError(error, 'sessionMeta');
       return (data as { created_at: string } | null) ?? null;
     },
   });
 
   const techniques = useQuery({
-    queryKey: ['techniques'],
+    queryKey: ['techniques', userId],
     queryFn: async () => {
-      const { data } = await supabase.from('techniques').select('id, name').order('name');
+      const { data, error } = await supabase.from('techniques').select('id, name').order('name');
+      throwIfSupabaseError(error, 'techniques');
       return (data ?? []) as CustomTechnique[];
     },
   });
@@ -386,7 +393,7 @@ export function SessionView({
       });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['session-sets', sessionId] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['session-sets', userId, sessionId] }),
   });
 
   const deleteSet = useMutation({
@@ -394,7 +401,7 @@ export function SessionView({
       const { error } = await supabase.from('set_logs').delete().eq('id', id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['session-sets', sessionId] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['session-sets', userId, sessionId] }),
   });
 
   const addTechnique = useMutation({
@@ -402,7 +409,7 @@ export function SessionView({
       const { error } = await supabase.from('techniques').insert({ user_id: userId, name });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['techniques'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['techniques', userId] }),
   });
 
   const deleteTechnique = useMutation({
@@ -410,7 +417,7 @@ export function SessionView({
       const { error } = await supabase.from('techniques').delete().eq('id', id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['techniques'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['techniques', userId] }),
   });
 
   const complete = useMutation({
@@ -420,8 +427,8 @@ export function SessionView({
     },
     onSuccess: () => {
       clearRest();
-      qc.removeQueries({ queryKey: ['session-sets', sessionId] });
-      qc.removeQueries({ queryKey: ['session-meta', sessionId] });
+      qc.removeQueries({ queryKey: ['session-sets', userId, sessionId] });
+      qc.removeQueries({ queryKey: ['session-meta', userId, sessionId] });
       qc.invalidateQueries({ queryKey: ['last-perf'] });
       qc.invalidateQueries({ queryKey: ['plans'] });
       qc.invalidateQueries({ queryKey: ['today'] });
@@ -436,7 +443,7 @@ export function SessionView({
     },
     onSuccess: () => {
       clearRest();
-      qc.removeQueries({ queryKey: ['session-sets', sessionId] });
+      qc.removeQueries({ queryKey: ['session-sets', userId, sessionId] });
       qc.invalidateQueries({ queryKey: ['plans'] });
       onCancel();
     },
@@ -487,6 +494,7 @@ export function SessionView({
             ) : (
               <ExerciseBlock
                 key={pe.id}
+                userId={userId}
                 planExercise={pe}
                 sets={setsFor}
                 techniques={custom}

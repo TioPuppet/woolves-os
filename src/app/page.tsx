@@ -6,7 +6,7 @@ import { TodayClient } from '@/components/dashboard/TodayClient';
 /**
  * Today Dashboard — M3. Server fetches the initial profile + snapshot for an
  * instant first paint; the interactive loop (quick logs, check-in, optimistic
- * updates, offline queue) runs client-side in TodayClient.
+ * updates) runs client-side in TodayClient.
  */
 export default async function TodayPage() {
   const supabase = getSupabaseServerClient();
@@ -26,6 +26,7 @@ export default async function TodayPage() {
   const timezone = p?.timezone ?? 'America/Sao_Paulo';
 
   const profile: TodayProfile = {
+    userId: user.id,
     title: p?.title ?? null,
     displayName: p?.display_name ?? null,
     timezone,
