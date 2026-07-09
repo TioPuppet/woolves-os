@@ -17,16 +17,16 @@ export function LevelHeader({
 
   return (
     <header className="flex flex-col gap-5">
-      <div className="flex items-start justify-between">
-        <div>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
           <p className="text-[11px] font-medium uppercase text-muted-foreground">
             {eyebrow}
           </p>
-          <h1 className="mt-1 text-2xl font-semibold">
+          <h1 className="mt-1 break-words text-2xl font-semibold leading-tight">
             {title}
           </h1>
         </div>
-        <div className="flex items-center gap-2 rounded-full border border-white/5 bg-card px-3 py-2">
+        <div className="flex shrink-0 items-center gap-2 rounded-full border border-white/5 bg-card px-3 py-2">
           <ThiingsAsset assetKey="fire" size={24} />
           <span className="text-sm font-semibold tabular-nums">{streak}</span>
           <span className="text-[11px] text-muted-foreground">dias</span>

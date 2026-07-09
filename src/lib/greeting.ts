@@ -1,12 +1,12 @@
-/** How to address the user: "Dr. Cleomárcio", "Sr. João", or first name only. */
+/** How to address the user: "Dr. Cleomárcio Miguel", "Sr. João", or full name only. */
 export function calledName(
   title: string | null | undefined,
   displayName: string | null | undefined,
 ): string {
-  const first = (displayName ?? '').trim().split(/\s+/)[0] ?? '';
-  if (!first) return 'Lobo';
+  const name = (displayName ?? '').trim().replace(/\s+/g, ' ');
+  if (!name) return 'Lobo';
   const t = (title ?? '').trim();
-  return t ? `${t} ${first}` : first;
+  return t ? `${t} ${name}` : name;
 }
 
 /** Available treatments for onboarding/profile. Empty value = none. */
