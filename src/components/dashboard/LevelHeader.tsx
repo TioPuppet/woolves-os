@@ -19,23 +19,23 @@ export function LevelHeader({
     <header className="flex flex-col gap-5">
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
+          <p className="text-[11px] font-medium uppercase text-muted-foreground">
             {eyebrow}
           </p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">
+          <h1 className="mt-1 text-2xl font-semibold">
             {title}
           </h1>
         </div>
         <div className="flex items-center gap-2 rounded-full border border-white/5 bg-card px-3 py-2">
-          <ThiingsAsset assetKey="fire" size={20} />
+          <ThiingsAsset assetKey="fire" size={24} />
           <span className="text-sm font-semibold tabular-nums">{streak}</span>
           <span className="text-[11px] text-muted-foreground">dias</span>
         </div>
       </div>
 
       <div className="surface-2 flex items-center gap-4 rounded-3xl p-4">
-        <div className="ring-gold flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-background/40">
-          <ThiingsAsset assetKey={levelAssetKey(level.level)} size={40} alt={level.title} />
+        <div className="ring-gold flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-background/40">
+          <ThiingsAsset assetKey={levelAssetKey(level.level)} size={48} alt={level.title} />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline justify-between gap-2">

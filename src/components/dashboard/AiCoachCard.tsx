@@ -33,9 +33,9 @@ export function AiCoachCard() {
   return (
     <section className="rounded-3xl border border-[hsl(var(--ia)/0.25)] bg-[hsl(var(--ia)/0.08)] p-5">
       <div className="mb-2.5 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <ThiingsAsset assetKey="ai" size={24} />
-          <h2 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[hsl(var(--ia))]">
+        <div className="flex items-center gap-3">
+          <ThiingsAsset assetKey="ai" size={36} />
+          <h2 className="text-[11px] font-semibold uppercase text-[hsl(var(--ia))]">
             Woolves IA
           </h2>
         </div>

@@ -17,9 +17,9 @@ export function HabitCard({
 }) {
   if (!habit) {
     return (
-      <section className="surface-2 rise rounded-3xl p-5">
-        <div className="mb-1 flex items-center gap-2.5">
-          <ThiingsAsset assetKey="habits" size={26} />
+      <section className="fitness-tile rise rounded-[1.5rem] p-5">
+        <div className="mb-1 flex items-center gap-3">
+          <ThiingsAsset assetKey="habits" size={36} />
           <h2 className="text-sm font-semibold">Hábito obrigatório</h2>
         </div>
         <p className="text-sm text-muted-foreground">
@@ -36,13 +36,13 @@ export function HabitCard({
       onClick={() => onToggle(!done)}
       aria-pressed={done}
       className={cn(
-        'press surface-2 flex w-full cursor-pointer items-center gap-3 rounded-3xl p-5 text-left transition-colors',
-        done && 'border-primary/40 bg-primary/10',
+        'press fitness-tile flex w-full cursor-pointer items-center gap-4 rounded-[1.5rem] p-5 text-left transition-colors',
+        done && 'border-primary/30 bg-primary/[0.08]',
       )}
     >
       <span
         className={cn(
-          'flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition',
+          'flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border-2 transition',
           done ? 'border-primary bg-primary' : 'border-muted-foreground/40',
         )}
       >
@@ -60,12 +60,12 @@ export function HabitCard({
         ) : null}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <span className="block text-xs font-medium uppercase text-muted-foreground">
           Hábito obrigatório
         </span>
         <span
           className={cn(
-            'block truncate text-sm font-semibold',
+            'block truncate text-base font-semibold',
             done && 'text-foreground',
           )}
         >

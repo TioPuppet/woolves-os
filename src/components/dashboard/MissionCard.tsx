@@ -37,13 +37,20 @@ export function MissionCard({
   };
 
   return (
-    <section className="hero-mission rounded-3xl p-6">
-      <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <ThiingsAsset assetKey="target" size={24} />
-          <h2 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-            {recovery ? 'Missão de recuperação' : 'Missão de hoje'}
-          </h2>
+    <section className={cn('fitness-tile rounded-[1.5rem] p-5', done && 'quest-complete')}>
+      <div className="mb-5 flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-primary/[0.08] ring-1 ring-primary/20">
+            <ThiingsAsset assetKey={done ? 'trophy' : 'target'} size={36} />
+          </div>
+          <div className="min-w-0">
+            <h2 className="text-[11px] font-semibold uppercase text-muted-foreground">
+              {recovery ? 'Quest de recuperação' : 'Quest principal'}
+            </h2>
+            <p className="mt-1 truncate text-sm font-semibold">
+              {done ? 'Recompensa liberada' : 'EXP do dia em jogo'}
+            </p>
+          </div>
         </div>
         {text ? <StatusBadge status={status} /> : null}
       </div>
@@ -72,42 +79,45 @@ export function MissionCard({
           </div>
         </div>
       ) : text ? (
-        <div className="flex items-start gap-3">
-          <button
-            type="button"
-            onClick={() => onToggleDone(!done)}
-            aria-pressed={done}
-            aria-label={done ? 'Desmarcar missão' : 'Concluir missão'}
-            className={cn(
-              'press mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition',
-              done ? 'border-primary bg-primary' : 'border-muted-foreground/40',
-            )}
-          >
-            {done && (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
-                <path d="M5 13l4 4L19 7" stroke="hsl(var(--primary-foreground))" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            )}
-          </button>
+        <div className="flex flex-col gap-4">
           <p
             className={cn(
-              'min-w-0 flex-1 text-lg font-medium leading-snug',
+              'text-xl font-semibold leading-snug',
               done && 'text-muted-foreground line-through',
             )}
           >
             {text}
           </p>
-          <button type="button" onClick={startEdit} aria-label="Editar missão" className="press mt-1 shrink-0 text-muted-foreground hover:text-foreground">
+          <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => onToggleDone(!done)}
+            aria-pressed={done}
+            aria-label={done ? 'Reabrir missão' : 'Concluir missão'}
+            className={cn(
+              'press min-h-11 flex-1 rounded-2xl text-sm font-semibold transition',
+              done
+                ? 'bg-status-completed/15 text-status-completed ring-1 ring-status-completed/25'
+                : 'bg-primary text-primary-foreground',
+            )}
+          >
+            {done ? 'Reabrir quest' : '+120 EXP · Concluir'}
+          </button>
+          <button type="button" onClick={startEdit} aria-label="Editar missão" className="press grid min-h-11 w-12 shrink-0 place-items-center rounded-2xl border border-white/[0.08] text-muted-foreground hover:text-foreground">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
               <path d="M4 20h4L18.5 9.5a2.12 2.12 0 00-3-3L5 17v3z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
+          </div>
         </div>
       ) : (
         <button type="button" onClick={startEdit} className="press flex w-full items-center justify-between gap-3 text-left">
-          <span className="text-base font-medium text-muted-foreground">Defina a missão de hoje.</span>
-          <span className="shrink-0 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground">
-            Definir
+          <span>
+            <span className="block text-lg font-semibold">Defina sua quest.</span>
+            <span className="mt-1 block text-sm text-muted-foreground">Uma missão clara para ganhar o dia.</span>
+          </span>
+          <span className="shrink-0 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">
+            Criar
           </span>
         </button>
       )}

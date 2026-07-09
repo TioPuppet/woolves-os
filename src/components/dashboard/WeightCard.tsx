@@ -23,10 +23,10 @@ export function WeightCard({
       : null;
 
   return (
-    <section className="surface-2 flex flex-col gap-3 rounded-3xl p-5">
+    <section className="fitness-tile flex flex-col gap-3 rounded-[1.5rem] p-5">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <ThiingsAsset assetKey="weight" size={26} />
+        <div className="flex items-center gap-3">
+          <ThiingsAsset assetKey="weight" size={36} />
           <h2 className="text-sm font-semibold">Peso</h2>
         </div>
         {latest != null ? (
