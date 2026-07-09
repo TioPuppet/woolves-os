@@ -14,6 +14,7 @@ import { HabitCard } from './HabitCard';
 import { WeightCard } from './WeightCard';
 import { AiCoachCard } from './AiCoachCard';
 import { CheckinSheet } from './CheckinSheet';
+import { WelcomeGate } from './WelcomeGate';
 
 export function TodayClient({
   profile,
@@ -83,6 +84,12 @@ export function TodayClient({
 
   return (
     <main className="flex min-h-screen flex-col gap-6 px-5 pb-28 pt-10">
+      <WelcomeGate
+        userId={profile.userId}
+        timezone={profile.timezone}
+        name={called}
+      />
+
       <LevelHeader
         eyebrow="Hoje"
         title={headerTitle}

@@ -1,5 +1,6 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { throwIfSupabaseError } from '@/lib/supabase/errors';
 
 type CookieToSet = { name: string; value: string; options: CookieOptions };
 
@@ -55,11 +56,12 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Signed in: check onboarding status once.
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('onboarding_done')
     .eq('id', user.id)
     .maybeSingle();
+  throwIfSupabaseError(profileError, 'middleware profile');
 
   const onboarded = profile?.onboarding_done === true;
 

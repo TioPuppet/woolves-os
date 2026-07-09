@@ -76,7 +76,7 @@ body {
 h1,
 h2 {
   font-family: var(--font-display), var(--font-sans), system-ui, sans-serif;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
 }
 
 /* Subtle premium backdrop: a soft green aura from the top, fading to black.

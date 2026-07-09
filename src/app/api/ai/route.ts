@@ -5,6 +5,7 @@ import { localDayString, shiftLocalDay, localHour } from '@/lib/date';
 import { computeDayStatus, DAY_STATUS_META } from '@/lib/day-status';
 import { levelFromExp } from '@/lib/exp-config';
 import { calledName } from '@/lib/greeting';
+import { throwIfSupabaseError } from '@/lib/supabase/errors';
 import { callGroq } from '@/lib/ai/groq';
 import {
   woolvesSystemPrompt,
@@ -23,13 +24,14 @@ export async function POST(req: Request) {
   const body = (await req.json().catch(() => ({}))) as { type?: string };
   const type = body.type === 'weekly' ? 'weekly' : 'daily';
 
-  const { data: p } = await supabase
+  const { data: p, error: profileError } = await supabase
     .from('profiles')
     .select(
       'title, display_name, timezone, required_habit, goal_water_ml, goal_protein_g, goal_kcal, goal_spend_limit_brl',
     )
     .eq('id', user.id)
     .maybeSingle();
+  throwIfSupabaseError(profileError, 'ai profile');
 
   const timezone = p?.timezone ?? 'America/Sao_Paulo';
   const name = calledName(p?.title, p?.display_name);
@@ -39,12 +41,13 @@ export async function POST(req: Request) {
   const refKey = type === 'daily' ? today : shiftLocalDay(today, -6);
 
   // Cache hit → return immediately.
-  const { data: cached } = await supabase
+  const { data: cached, error: cacheError } = await supabase
     .from('ai_outputs')
     .select('content')
     .eq('kind', type)
     .eq('ref_key', refKey)
     .maybeSingle();
+  throwIfSupabaseError(cacheError, 'ai cache');
   if (cached?.content) {
     return NextResponse.json({ content: cached.content, cached: true });
   }
@@ -99,6 +102,9 @@ export async function POST(req: Request) {
         .lte('ref_date', today),
       supabase.from('exp_events').select('amount').gte('ref_date', weekAgo),
     ]);
+    throwIfSupabaseError(checkins.error, 'ai weekly checkins');
+    throwIfSupabaseError(sleep.error, 'ai weekly sleep');
+    throwIfSupabaseError(exp.error, 'ai weekly exp');
     const ciMap = new Map(
       (checkins.data ?? []).map((c: { ref_date: string; day_status: string; mood: number }) => [c.ref_date, c]),
     );
@@ -133,12 +139,13 @@ export async function POST(req: Request) {
     });
   }
 
-  await supabase
+  const { error: outputError } = await supabase
     .from('ai_outputs')
     .upsert(
       { user_id: user.id, kind: type, ref_key: refKey, content },
       { onConflict: 'user_id,kind,ref_key' },
     );
+  throwIfSupabaseError(outputError, 'ai output upsert');
 
   return NextResponse.json({ content });
 }

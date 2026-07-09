@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
+import { throwIfSupabaseError } from '@/lib/supabase/errors';
 import {
   fetchMonth,
   fetchBudgets,
@@ -17,11 +18,12 @@ export default async function FinancasPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('timezone, goal_spend_limit_brl')
     .eq('id', user.id)
     .maybeSingle();
+  throwIfSupabaseError(profileError, 'finance profile');
 
   const timezone = profile?.timezone ?? 'America/Sao_Paulo';
   const dailyLimit = profile?.goal_spend_limit_brl ?? null;

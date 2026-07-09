@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
+import { throwIfSupabaseError } from '@/lib/supabase/errors';
 import { fetchActiveSession } from '@/lib/training';
 import { localDayString } from '@/lib/date';
 import { calledName } from '@/lib/greeting';
@@ -12,11 +13,12 @@ export default async function TreinoPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('timezone, display_name, title')
     .eq('id', user.id)
     .maybeSingle();
+  throwIfSupabaseError(profileError, 'training profile');
 
   const timezone = profile?.timezone ?? 'America/Sao_Paulo';
   const name = calledName(profile?.title, profile?.display_name);

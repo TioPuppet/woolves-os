@@ -18,6 +18,8 @@
 - Corrigido escopo dos caches de `Hoje` e `Sono` para incluir `userId` + timezone.
 - Marcado `supabase/setup_all.sql` como legado, pois cobre apenas M1-M4 e não representa o schema atual.
 - Adicionada guarda central para erros de leitura do Supabase; telas principais agora falham de forma visível em vez de transformar erro em lista vazia.
+- Estendida a guarda para páginas server-side, rota da IA, middleware de onboarding, busca de alimentos e atualização de perfil.
+- Fechado erro ignorado ao iniciar treino e alinhadas invalidações de treino ao cache por usuário.
 - Checagem estática das migrations confirmou 27 tabelas com RLS explícito.
 
 ## Validação local

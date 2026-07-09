@@ -40,7 +40,7 @@ export function useTraining(userId: string, timezone: string) {
       if (error) throw error;
       return data as Exercise;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['exercises'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['exercises', userId] }),
   });
 
   const createPlan = useMutation({
@@ -63,7 +63,7 @@ export function useTraining(userId: string, timezone: string) {
         plan_exercises: [],
       };
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['plans'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['plans', userId] }),
   });
 
   const deletePlan = useMutation({
@@ -74,7 +74,7 @@ export function useTraining(userId: string, timezone: string) {
         .eq('id', planId);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['plans'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['plans', userId] }),
   });
 
   const addExerciseToPlan = useMutation({
@@ -92,7 +92,7 @@ export function useTraining(userId: string, timezone: string) {
       });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['plans'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['plans', userId] }),
   });
 
   const updatePlanExercise = useMutation({
@@ -111,7 +111,7 @@ export function useTraining(userId: string, timezone: string) {
         .eq('id', v.id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['plans'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['plans', userId] }),
   });
 
   const deletePlanExercise = useMutation({
@@ -122,7 +122,7 @@ export function useTraining(userId: string, timezone: string) {
         .eq('id', id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['plans'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['plans', userId] }),
   });
 
   const renamePlan = useMutation({
@@ -133,7 +133,7 @@ export function useTraining(userId: string, timezone: string) {
         .eq('id', v.id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['plans'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['plans', userId] }),
   });
 
   // Swap the order of two exercises within a plan.
@@ -144,7 +144,7 @@ export function useTraining(userId: string, timezone: string) {
       const r2 = await supabase.from('plan_exercises').update({ order_idx: v.aOrder }).eq('id', v.bId);
       if (r2.error) throw r2.error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['plans'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['plans', userId] }),
   });
 
   const duplicatePlan = useMutation({
@@ -171,17 +171,18 @@ export function useTraining(userId: string, timezone: string) {
         if (e2) throw e2;
       }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['plans'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['plans', userId] }),
   });
 
   const startSession = useMutation({
     mutationFn: async (planId: number | null): Promise<number> => {
       // Fecha qualquer sessão anterior não concluída para não "ficar rolando".
-      await supabase
+      const { error: closeError } = await supabase
         .from('workout_sessions')
         .delete()
         .eq('user_id', userId)
         .eq('completed', false);
+      if (closeError) throw closeError;
       const { data, error } = await supabase
         .from('workout_sessions')
         .insert({

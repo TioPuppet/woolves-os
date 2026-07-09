@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
+import { throwIfSupabaseError } from '@/lib/supabase/errors';
 import { fetchTodaySnapshot, type TodayProfile } from '@/lib/today';
 import { TodayClient } from '@/components/dashboard/TodayClient';
 
@@ -15,13 +16,14 @@ export default async function TodayPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const { data: p } = await supabase
+  const { data: p, error: profileError } = await supabase
     .from('profiles')
     .select(
       'title, display_name, timezone, required_habit, goal_water_ml, goal_protein_g, goal_kcal, goal_spend_limit_brl',
     )
     .eq('id', user.id)
     .maybeSingle();
+  throwIfSupabaseError(profileError, 'today profile');
 
   const timezone = p?.timezone ?? 'America/Sao_Paulo';
 

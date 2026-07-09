@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { throwIfSupabaseError } from '@/lib/supabase/errors';
 import { MEALS, type Food, type MealType } from '@/lib/nutrition';
 import type { NewFood } from '@/hooks/useNutrition';
 
@@ -28,6 +29,7 @@ export function FoodSheet({
   const [grams, setGrams] = useState('100');
   const [targetMeal, setTargetMeal] = useState<MealType>(meal);
   const [creating, setCreating] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) setTargetMeal(meal);
@@ -38,16 +40,26 @@ export function FoodSheet({
     const q = query.trim();
     let active = true;
     setLoading(true);
+    setSearchError(null);
     const t = setTimeout(async () => {
-      const req = supabase
-        .from('foods')
-        .select('id, name, kcal_per_100, protein_per_100, carb_per_100, fat_per_100')
-        .order('name')
-        .limit(30);
-      const { data } = q ? await req.ilike('name', `%${q}%`) : await req;
-      if (active) {
-        setResults((data ?? []) as Food[]);
-        setLoading(false);
+      try {
+        const req = supabase
+          .from('foods')
+          .select('id, name, kcal_per_100, protein_per_100, carb_per_100, fat_per_100')
+          .order('name')
+          .limit(30);
+        const { data, error } = q ? await req.ilike('name', `%${q}%`) : await req;
+        throwIfSupabaseError(error, 'food search');
+        if (active) {
+          setResults((data ?? []) as Food[]);
+        }
+      } catch {
+        if (active) {
+          setResults([]);
+          setSearchError('Não foi possível buscar alimentos agora.');
+        }
+      } finally {
+        if (active) setLoading(false);
       }
     }, 250);
     return () => {
@@ -168,7 +180,9 @@ export function FoodSheet({
               className="mb-3 min-h-11 w-full rounded-xl border border-border bg-card px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/60"
             />
             <div className="-mx-1 flex-1 overflow-y-auto">
-              {loading && results.length === 0 ? (
+              {searchError ? (
+                <p className="px-1 py-4 text-sm text-status-broken">{searchError}</p>
+              ) : loading && results.length === 0 ? (
                 <p className="px-1 py-4 text-sm text-muted-foreground">Buscando…</p>
               ) : results.length === 0 ? (
                 <p className="px-1 py-4 text-sm text-muted-foreground">Nenhum alimento encontrado.</p>

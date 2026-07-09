@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
+import { throwIfSupabaseError } from '@/lib/supabase/errors';
 import { signOutAction } from '@/app/(auth)/actions';
 import { updateProfileName } from './actions';
 import { levelFromExp, levelAssetKey } from '@/lib/exp-config';
@@ -13,15 +14,17 @@ export default async function PerfilPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select(
       'title, display_name, required_habit, goal_kcal, goal_protein_g, goal_water_ml',
     )
     .eq('id', user.id)
     .maybeSingle();
+  throwIfSupabaseError(profileError, 'profile page');
 
-  const { data: expTotal } = await supabase.rpc('get_exp_total');
+  const { data: expTotal, error: expError } = await supabase.rpc('get_exp_total');
+  throwIfSupabaseError(expError, 'profile exp');
   const level = levelFromExp(typeof expTotal === 'number' ? expTotal : 0);
   const called = calledName(profile?.title, profile?.display_name);
 
