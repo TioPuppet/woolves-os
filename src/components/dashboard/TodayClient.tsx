@@ -3,13 +3,18 @@
 import { useEffect, useState } from 'react';
 import { ThiingsAsset } from '@/components/ThiingsAsset';
 import { useToday } from '@/hooks/useToday';
-import { type TodayProfile, type TodaySnapshot } from '@/lib/today';
+import {
+  type TodayCampaign,
+  type TodayProfile,
+  type TodaySnapshot,
+} from '@/lib/today';
 import { levelFromExp } from '@/lib/exp-config';
 import { computeDayStatus, type DayStatus, DAY_STATUS_META } from '@/lib/day-status';
 import { localHour } from '@/lib/date';
 import { calledName } from '@/lib/greeting';
 import { LevelHeader } from './LevelHeader';
 import { TodayCommand } from './TodayCommand';
+import { WeeklyCampaign } from './WeeklyCampaign';
 import { MissionCard } from './MissionCard';
 import { WaterCard } from './WaterCard';
 import { HabitCard } from './HabitCard';
@@ -27,9 +32,11 @@ interface LastCheckinResult {
 export function TodayClient({
   profile,
   initial,
+  initialCampaign,
 }: {
   profile: TodayProfile;
   initial: TodaySnapshot;
+  initialCampaign: TodayCampaign;
 }) {
   const {
     snapshot,
@@ -40,7 +47,14 @@ export function TodayClient({
     setMission,
     setMissionDone,
     submitCheckin,
-  } = useToday(profile.userId, profile.timezone, initial);
+    campaign,
+  } = useToday(
+    profile.userId,
+    profile.timezone,
+    initial,
+    initialCampaign,
+    profile.goalWaterMl,
+  );
   const [sheetOpen, setSheetOpen] = useState(false);
   const [victoryOpen, setVictoryOpen] = useState(false);
   const [lastCheckin, setLastCheckin] = useState<LastCheckinResult | null>(null);
@@ -102,6 +116,11 @@ export function TodayClient({
   const defaultMissionDone = snapshot.missionText
     ? snapshot.missionDone
     : snapshot.habitDone && waterReached && proteinReached;
+  const victoryMissionDone = lastCheckin?.missionDone ?? snapshot.missionDone;
+  const victoryDayConquered =
+    (snapshot.missionText != null ? victoryMissionDone : defaultMissionDone) &&
+    habitRingComplete &&
+    waterRingComplete;
 
   return (
     <main className="flex min-h-screen flex-col gap-5 px-5 pb-28 pt-10">
@@ -129,6 +148,8 @@ export function TodayClient({
         proteinToday={snapshot.proteinToday}
         proteinGoal={proteinGoal}
       />
+
+      <WeeklyCampaign campaign={campaign} />
 
       {/* Hábito obrigatório — logo abaixo do EXP */}
       <HabitCard
@@ -168,6 +189,7 @@ export function TodayClient({
           status={status}
           streak={snapshot.streak}
           missionDone={snapshot.missionDone}
+          campaign={campaign}
         />
       ) : (
         <button
@@ -195,9 +217,10 @@ export function TodayClient({
       <CheckinVictory
         open={victoryOpen && lastCheckin !== null}
         mood={lastCheckin?.mood ?? 3}
-        missionDone={lastCheckin?.missionDone ?? false}
+        dayConquered={victoryDayConquered}
         status={status}
         streak={snapshot.streak}
+        campaign={campaign}
         onClose={() => setVictoryOpen(false)}
       />
     </main>
@@ -208,10 +231,12 @@ function DayClosedCard({
   status,
   streak,
   missionDone,
+  campaign,
 }: {
   status: DayStatus;
   streak: number;
   missionDone: boolean;
+  campaign: TodayCampaign;
 }) {
   return (
     <section className="victory-card rounded-[1.75rem] border border-white/[0.08] p-5">
@@ -234,7 +259,7 @@ function DayClosedCard({
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-2">
+      <div className="mt-4 grid grid-cols-3 gap-2">
         <div className="rounded-2xl border border-white/[0.08] bg-white/[0.04] px-4 py-3">
           <p className="text-[10px] font-semibold uppercase text-muted-foreground">
             Streak
@@ -243,9 +268,19 @@ function DayClosedCard({
         </div>
         <div className="rounded-2xl border border-white/[0.08] bg-white/[0.04] px-4 py-3">
           <p className="text-[10px] font-semibold uppercase text-muted-foreground">
-            Próxima run
+            Semana
           </p>
-          <p className="mt-1 text-lg font-bold">Amanhã</p>
+          <p className="mt-1 text-lg font-bold tabular-nums">
+            {campaign.conqueredDays}/7
+          </p>
+        </div>
+        <div className="rounded-2xl border border-white/[0.08] bg-white/[0.04] px-4 py-3">
+          <p className="text-[10px] font-semibold uppercase text-muted-foreground">
+            EXP
+          </p>
+          <p className="mt-1 text-lg font-bold tabular-nums">
+            +{campaign.expWeek}
+          </p>
         </div>
       </div>
     </section>

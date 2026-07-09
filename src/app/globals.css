@@ -316,6 +316,16 @@ select::-ms-expand {
     0 30px 80px -48px hsl(46 67% 47% / 0.55);
 }
 
+.weekly-campaign {
+  background:
+    radial-gradient(100% 58% at 10% -10%, hsl(145 63% 49% / 0.13), transparent 54%),
+    radial-gradient(95% 56% at 90% -8%, hsl(46 67% 47% / 0.12), transparent 56%),
+    linear-gradient(145deg, hsl(240 5% 13% / 0.98), hsl(240 9% 7% / 0.98));
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.045),
+    0 22px 58px -42px hsl(0 0% 0% / 0.92);
+}
+
 /* Accessibility: honor reduced-motion for ambient/looping UI motion. */
 @media (prefers-reduced-motion: reduce) {
   *,

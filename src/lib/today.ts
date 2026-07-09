@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { localDayString } from '@/lib/date';
+import { localDayString, shiftLocalDay } from '@/lib/date';
 import type { DayStatus } from '@/lib/day-status';
 import { throwIfSupabaseError } from '@/lib/supabase/errors';
 
@@ -31,6 +31,28 @@ export interface TodayProfile {
   goalProteinG: number | null;
   goalKcal: number | null;
   goalSpendLimitBrl: number | null;
+}
+
+export interface TodayCampaignDay {
+  date: string;
+  weekday: string;
+  status: DayStatus | null;
+  missionDone: boolean;
+  habitDone: boolean;
+  waterMl: number;
+  waterGoalMl: number | null;
+  exp: number;
+  closed: boolean;
+  conquered: boolean;
+}
+
+export interface TodayCampaign {
+  days: TodayCampaignDay[];
+  expWeek: number;
+  closedDays: number;
+  conqueredDays: number;
+  bestChain: number;
+  focusLabel: string;
 }
 
 /** Fetch today's dynamic snapshot via RLS-protected reads (owner-only). */
@@ -108,5 +130,145 @@ export async function fetchTodaySnapshot(
     prevWeight: weightRows[1]?.kg ?? null,
     missionText: (mission.data?.text as string | undefined)?.trim() || null,
     missionDone: mission.data?.done === true,
+  };
+}
+
+function weekdayLabel(dayString: string): string {
+  const [year, month, day] = dayString.split('-').map(Number) as [
+    number,
+    number,
+    number,
+  ];
+  return new Intl.DateTimeFormat('pt-BR', { weekday: 'short', timeZone: 'UTC' })
+    .format(new Date(Date.UTC(year, month - 1, day)))
+    .replace('.', '');
+}
+
+function campaignFocus(conqueredDays: number, closedDays: number): string {
+  if (conqueredDays >= 6) return 'Semana lendária';
+  if (conqueredDays >= 4) return 'Domínio crescente';
+  if (conqueredDays >= 2) return 'Ritmo de campanha';
+  if (closedDays > 0) return 'Reconstruindo força';
+  return 'Primeiro território';
+}
+
+function longestConqueredChain(days: TodayCampaignDay[]): number {
+  let current = 0;
+  let best = 0;
+  for (const day of days) {
+    if (day.conquered) {
+      current += 1;
+      best = Math.max(best, current);
+    } else {
+      current = 0;
+    }
+  }
+  return best;
+}
+
+export async function fetchTodayCampaign(
+  client: SupabaseClient,
+  timezone: string,
+  waterGoalMl: number | null,
+): Promise<TodayCampaign> {
+  const today = localDayString(timezone);
+  const start = shiftLocalDay(today, -6);
+  const dates = Array.from({ length: 7 }, (_, i) => shiftLocalDay(start, i));
+
+  const [checkins, water, habits, missions, exp] = await Promise.all([
+    client
+      .from('checkins')
+      .select('ref_date, day_status')
+      .gte('ref_date', start)
+      .lte('ref_date', today),
+    client
+      .from('water_logs')
+      .select('ref_date, ml')
+      .gte('ref_date', start)
+      .lte('ref_date', today),
+    client
+      .from('habit_logs')
+      .select('ref_date, done')
+      .eq('habit_key', 'required')
+      .gte('ref_date', start)
+      .lte('ref_date', today),
+    client
+      .from('daily_missions')
+      .select('ref_date, done')
+      .gte('ref_date', start)
+      .lte('ref_date', today),
+    client
+      .from('exp_events')
+      .select('ref_date, amount')
+      .gte('ref_date', start)
+      .lte('ref_date', today),
+  ]);
+
+  throwIfSupabaseError(checkins.error, 'fetchTodayCampaign checkins');
+  throwIfSupabaseError(water.error, 'fetchTodayCampaign water');
+  throwIfSupabaseError(habits.error, 'fetchTodayCampaign habits');
+  throwIfSupabaseError(missions.error, 'fetchTodayCampaign missions');
+  throwIfSupabaseError(exp.error, 'fetchTodayCampaign exp');
+
+  const statusByDate = new Map(
+    (checkins.data ?? []).map((r: { ref_date: string; day_status: string }) => [
+      r.ref_date,
+      r.day_status as DayStatus,
+    ]),
+  );
+  const habitByDate = new Map(
+    (habits.data ?? []).map((r: { ref_date: string; done: boolean }) => [
+      r.ref_date,
+      r.done === true,
+    ]),
+  );
+  const missionByDate = new Map(
+    (missions.data ?? []).map((r: { ref_date: string; done: boolean }) => [
+      r.ref_date,
+      r.done === true,
+    ]),
+  );
+  const waterByDate = new Map<string, number>();
+  for (const row of (water.data ?? []) as { ref_date: string; ml: number }[]) {
+    waterByDate.set(row.ref_date, (waterByDate.get(row.ref_date) ?? 0) + row.ml);
+  }
+  const expByDate = new Map<string, number>();
+  for (const row of (exp.data ?? []) as { ref_date: string; amount: number }[]) {
+    expByDate.set(row.ref_date, (expByDate.get(row.ref_date) ?? 0) + row.amount);
+  }
+
+  const days = dates.map((date): TodayCampaignDay => {
+    const waterMl = waterByDate.get(date) ?? 0;
+    const status = statusByDate.get(date) ?? null;
+    const missionDone = missionByDate.get(date) === true;
+    const habitDone = habitByDate.get(date) === true;
+    const waterDone = waterGoalMl == null || waterMl >= waterGoalMl;
+    const conquered = missionDone && habitDone && waterDone;
+
+    return {
+      date,
+      weekday: weekdayLabel(date),
+      status,
+      missionDone,
+      habitDone,
+      waterMl,
+      waterGoalMl,
+      exp: expByDate.get(date) ?? 0,
+      closed: status != null,
+      conquered,
+    };
+  });
+
+  const closedDays = days.filter((day) => day.closed).length;
+  const conqueredDays = days.filter((day) => day.conquered).length;
+  const expWeek = days.reduce((sum, day) => sum + day.exp, 0);
+
+  return {
+    days,
+    expWeek,
+    closedDays,
+    conqueredDays,
+    bestChain: longestConqueredChain(days),
+    focusLabel: campaignFocus(conqueredDays, closedDays),
   };
 }

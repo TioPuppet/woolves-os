@@ -2,7 +2,12 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
-import { fetchTodaySnapshot, type TodaySnapshot } from '@/lib/today';
+import {
+  fetchTodayCampaign,
+  fetchTodaySnapshot,
+  type TodayCampaign,
+  type TodaySnapshot,
+} from '@/lib/today';
 
 /**
  * Today loop state: reads the snapshot and exposes optimistic mutations for the
@@ -13,10 +18,13 @@ export function useToday(
   userId: string,
   timezone: string,
   initial: TodaySnapshot,
+  initialCampaign: TodayCampaign,
+  waterGoalMl: number | null,
 ) {
   const qc = useQueryClient();
   const supabase = getSupabaseBrowserClient();
   const key = ['today', userId, timezone] as const;
+  const campaignKey = ['today-campaign', userId, timezone, waterGoalMl] as const;
 
   const query = useQuery({
     queryKey: key,
@@ -24,6 +32,18 @@ export function useToday(
     initialData: initial,
     staleTime: 15_000,
   });
+
+  const campaignQuery = useQuery({
+    queryKey: campaignKey,
+    queryFn: () => fetchTodayCampaign(supabase, timezone, waterGoalMl),
+    initialData: initialCampaign,
+    staleTime: 15_000,
+  });
+
+  function invalidateToday() {
+    void qc.invalidateQueries({ queryKey: key });
+    void qc.invalidateQueries({ queryKey: campaignKey });
+  }
 
   const logWater = useMutation({
     mutationFn: async (ml: number) => {
@@ -44,7 +64,7 @@ export function useToday(
     onError: (_e, _ml, ctx) => {
       if (ctx?.prev) qc.setQueryData(key, ctx.prev);
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: key }),
+    onSettled: invalidateToday,
   });
 
   const removeWater = useMutation({
@@ -66,7 +86,7 @@ export function useToday(
     onError: (_e, _ml, ctx) => {
       if (ctx?.prev) qc.setQueryData(key, ctx.prev);
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: key }),
+    onSettled: invalidateToday,
   });
 
   const toggleHabit = useMutation({
@@ -86,7 +106,7 @@ export function useToday(
     onError: (_e, _v, ctx) => {
       if (ctx?.prev) qc.setQueryData(key, ctx.prev);
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: key }),
+    onSettled: invalidateToday,
   });
 
   const logFood = useMutation({
@@ -97,7 +117,7 @@ export function useToday(
       });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: key }),
+    onSuccess: invalidateToday,
   });
 
   const logWeight = useMutation({
@@ -105,7 +125,7 @@ export function useToday(
       const { error } = await supabase.rpc('log_weight', { p_kg: kg });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: key }),
+    onSuccess: invalidateToday,
   });
 
   const setMission = useMutation({
@@ -127,7 +147,7 @@ export function useToday(
     onError: (_e, _v, ctx) => {
       if (ctx?.prev) qc.setQueryData(key, ctx.prev);
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: key }),
+    onSettled: invalidateToday,
   });
 
   const setMissionDone = useMutation({
@@ -144,7 +164,7 @@ export function useToday(
     onError: (_e, _v, ctx) => {
       if (ctx?.prev) qc.setQueryData(key, ctx.prev);
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: key }),
+    onSettled: invalidateToday,
   });
 
   const submitCheckin = useMutation({
@@ -160,11 +180,12 @@ export function useToday(
       });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: key }),
+    onSuccess: invalidateToday,
   });
 
   return {
     snapshot: query.data ?? initial,
+    campaign: campaignQuery.data ?? initialCampaign,
     logWater,
     removeWater,
     toggleHabit,

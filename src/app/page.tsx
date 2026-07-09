@@ -1,7 +1,11 @@
 import { redirect } from 'next/navigation';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { throwIfSupabaseError } from '@/lib/supabase/errors';
-import { fetchTodaySnapshot, type TodayProfile } from '@/lib/today';
+import {
+  fetchTodayCampaign,
+  fetchTodaySnapshot,
+  type TodayProfile,
+} from '@/lib/today';
 import { TodayClient } from '@/components/dashboard/TodayClient';
 
 /**
@@ -39,7 +43,16 @@ export default async function TodayPage() {
     goalSpendLimitBrl: p?.goal_spend_limit_brl ?? null,
   };
 
-  const initial = await fetchTodaySnapshot(supabase, timezone);
+  const [initial, initialCampaign] = await Promise.all([
+    fetchTodaySnapshot(supabase, timezone),
+    fetchTodayCampaign(supabase, timezone, profile.goalWaterMl),
+  ]);
 
-  return <TodayClient profile={profile} initial={initial} />;
+  return (
+    <TodayClient
+      profile={profile}
+      initial={initial}
+      initialCampaign={initialCampaign}
+    />
+  );
 }

@@ -2,28 +2,31 @@
 
 import { ThiingsAsset } from '@/components/ThiingsAsset';
 import { DAY_STATUS_META, type DayStatus } from '@/lib/day-status';
+import type { TodayCampaign } from '@/lib/today';
 
-function rewardForMood(mood: number): string {
-  if (mood >= 5) return '+120 EXP';
-  if (mood === 4) return '+80 EXP';
-  if (mood === 3) return '+50 EXP';
-  if (mood === 2) return '+25 EXP';
-  return '+10 EXP';
+function moraleLabel(mood: number): string {
+  if (mood >= 5) return 'Lendário';
+  if (mood === 4) return 'Forte';
+  if (mood === 3) return 'Estável';
+  if (mood === 2) return 'Resistiu';
+  return 'Ferido';
 }
 
 export function CheckinVictory({
   open,
   mood,
-  missionDone,
+  dayConquered,
   status,
   streak,
+  campaign,
   onClose,
 }: {
   open: boolean;
   mood: number;
-  missionDone: boolean;
+  dayConquered: boolean;
   status: DayStatus;
   streak: number;
+  campaign: TodayCampaign;
   onClose: () => void;
 }) {
   if (!open) return null;
@@ -43,26 +46,42 @@ export function CheckinVictory({
 
       <section className="victory-card anim-rise relative w-full max-w-app rounded-[2rem] border border-white/[0.08] p-6 text-center">
         <div className="mx-auto mb-5 grid h-24 w-24 place-items-center rounded-[2rem] bg-primary/[0.09] ring-1 ring-primary/25">
-          <ThiingsAsset assetKey={missionDone ? 'trophy' : 'award'} size={74} />
+          <ThiingsAsset assetKey={dayConquered ? 'trophy' : 'award'} size={74} />
         </div>
 
         <p className="text-[11px] font-semibold uppercase text-muted-foreground">
           Dungeon concluída
         </p>
         <h2 className="mt-1 text-3xl font-semibold leading-tight">
-          {missionDone ? 'Vitória registrada' : 'Dia sobrevivido'}
+          {dayConquered ? 'Território conquistado' : 'Dia registrado'}
         </h2>
 
         <div className="mt-6 grid grid-cols-3 gap-2">
-          <ResultTile label="EXP" value={rewardForMood(mood)} tone="gold" />
+          <ResultTile label="Moral" value={moraleLabel(mood)} tone="gold" />
           <ResultTile label="Status" value={DAY_STATUS_META[status].label} />
           <ResultTile label="Streak" value={`${streak}d`} />
         </div>
 
+        <div className="mt-3 rounded-2xl border border-white/[0.08] bg-white/[0.04] px-4 py-3">
+          <div className="flex items-center justify-between gap-3 text-left">
+            <div>
+              <p className="text-[10px] font-semibold uppercase text-muted-foreground">
+                Campanha
+              </p>
+              <p className="mt-1 text-sm font-semibold">
+                {campaign.focusLabel} · {campaign.conqueredDays}/7
+              </p>
+            </div>
+            <p className="shrink-0 text-lg font-bold text-primary tabular-nums">
+              +{campaign.expWeek} EXP
+            </p>
+          </div>
+        </div>
+
         <p className="mx-auto mt-5 max-w-[18rem] text-sm leading-6 text-muted-foreground">
-          {missionDone
-            ? 'A quest principal entrou para o seu histórico. Amanhã a caçada reinicia.'
-            : 'Nem todo dia é conquista total. Ainda assim, registrar o campo mantém a campanha viva.'}
+          {dayConquered
+            ? 'Missão, hábito e água entraram para o histórico. Amanhã a campanha abre novo território.'
+            : 'Nem todo dia fecha perfeito. Registrar o campo mantém a campanha viva e mostra onde atacar amanhã.'}
         </p>
 
         <button
