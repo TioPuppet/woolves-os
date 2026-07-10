@@ -62,10 +62,30 @@ function Tab({
   );
 }
 
+function HubIcon({
+  item,
+  avatarUrl,
+}: {
+  item: { href: string; label: string; icon: ThiingsAssetKey };
+  avatarUrl: string | null;
+}) {
+  if (item.href === '/perfil' && avatarUrl) {
+    return (
+      <span className="grid h-9 w-9 overflow-hidden rounded-2xl ring-1 ring-primary/35">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={avatarUrl} alt="Perfil" className="h-full w-full object-cover" />
+      </span>
+    );
+  }
+
+  return <ThiingsAsset assetKey={item.icon} size={36} />;
+}
+
 export function BottomNav() {
   const pathname = usePathname();
   const [hubOpen, setHubOpen] = useState(false);
   const [isClinician, setIsClinician] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -77,11 +97,13 @@ export function BottomNav() {
       if (!user) return;
       const { data, error } = await supabase
         .from('profiles')
-        .select('is_clinician')
+        .select('is_clinician, avatar_url')
         .eq('id', user.id)
         .single();
       throwIfSupabaseError(error, 'bottomNav profile');
-      if (alive && data?.is_clinician) setIsClinician(true);
+      if (!alive) return;
+      if (data?.is_clinician) setIsClinician(true);
+      setAvatarUrl(data?.avatar_url ?? null);
     })().catch(() => {
       if (alive) setIsClinician(false);
     });
@@ -120,7 +142,7 @@ export function BottomNav() {
                   style={{ animationDelay: `${i * 45}ms` }}
                   className="anim-pop surface-2 flex flex-col items-center gap-2 rounded-2xl p-4"
                 >
-                  <ThiingsAsset assetKey={item.icon} size={36} />
+                  <HubIcon item={item} avatarUrl={avatarUrl} />
                   <span className="text-xs font-medium">{item.label}</span>
                 </Link>
               ))}
