@@ -22,10 +22,17 @@ export function useSleep(userId: string, timezone: string, initial: SleepData) {
   };
 
   const logSleep = useMutation({
-    mutationFn: async (v: { hours: number; quality: number | null }) => {
+    mutationFn: async (v: {
+      hours: number;
+      quality: number | null;
+      bedTime: string | null;
+      wakeTime: string | null;
+    }) => {
       const { error } = await supabase.rpc('log_sleep', {
         p_hours: v.hours,
         p_quality: v.quality,
+        p_bed_time: v.bedTime,
+        p_wake_time: v.wakeTime,
       });
       if (error) throw error;
     },

@@ -16,6 +16,8 @@ export interface SleepEntry {
   ref_date: string;
   hours: number;
   quality: number | null;
+  bed_time: string | null;
+  wake_time: string | null;
 }
 
 export interface SleepData {
@@ -32,7 +34,7 @@ export async function fetchSleepData(
 
   const { data, error } = await client
     .from('sleep_logs')
-    .select('ref_date, hours, quality')
+    .select('ref_date, hours, quality, bed_time, wake_time')
     .gte('ref_date', weekAgo)
     .lte('ref_date', today)
     .order('ref_date');
