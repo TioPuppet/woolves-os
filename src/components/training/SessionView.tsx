@@ -10,6 +10,11 @@ import { ThiingsAsset } from '@/components/ThiingsAsset';
 import { startRest, clearRest } from '@/lib/rest-timer';
 import { cn } from '@/lib/utils';
 import { throwIfSupabaseError } from '@/lib/supabase/errors';
+import {
+  activityMetricLabels,
+  getTrainingModality,
+  type ActivityMetric,
+} from '@/lib/training-modalities';
 
 const REST_DEFAULT = 90;
 
@@ -28,6 +33,18 @@ interface LogPayload {
   setType: string;
   durationMin: number | null;
   distanceKm: number | null;
+  rounds: number | null;
+  activityMeta: Record<string, unknown>;
+  notes: string | null;
+}
+
+type TrainingDifficulty = 'Leve' | 'Firme' | 'Brutal';
+
+export interface WorkoutSummary {
+  durationSec: number;
+  sets: number;
+  exp: number;
+  difficulty: TrainingDifficulty;
 }
 
 function fmt(sec: number): string {
@@ -64,14 +81,23 @@ function CardioBlock({
   onDeleteSet: (id: number) => void;
 }) {
   const exId = planExercise.exercise_id;
+  const modality = getTrainingModality(planExercise.exercise.name);
+  const metrics = new Set<ActivityMetric>(modality.metrics);
   const [dur, setDur] = useState('');
   const [dist, setDist] = useState('');
-  const canAdd = dur.trim() !== '' || dist.trim() !== '';
+  const [rounds, setRounds] = useState('');
+  const [rpe, setRpe] = useState('');
+  const [poolLength, setPoolLength] = useState('');
+  const [notes, setNotes] = useState('');
+  const canAdd = [dur, dist, rounds, rpe, notes].some((value) => value.trim() !== '');
+
+  const inputClass = 'min-h-10 min-w-0 rounded-lg border border-border bg-card px-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/60';
+  const show = (metric: ActivityMetric) => metrics.has(metric);
 
   return (
     <div className="surface-2 flex flex-col gap-3 rounded-2xl p-4">
       <div className="flex items-center gap-2.5">
-        <ThiingsAsset assetKey="cardio" size={30} />
+        <ThiingsAsset assetKey={modality.icon} size={34} />
         <span className="min-w-0 flex-1 truncate text-sm font-semibold">{planExercise.exercise.name}</span>
         <span className="shrink-0 rounded-full bg-card px-2 py-0.5 text-[10px] font-bold uppercase text-[hsl(211_90%_58%)]">
           Cardio
@@ -87,6 +113,8 @@ function CardioBlock({
                 <span className="w-5 shrink-0 text-xs text-muted-foreground">{s.set_no}ª</span>
                 {s.duration_min != null && <span className="shrink-0">{s.duration_min}<span className="text-xs text-muted-foreground"> min</span></span>}
                 {s.distance_km != null && <span className="shrink-0">{s.distance_km}<span className="text-xs text-muted-foreground"> km</span></span>}
+                {s.rounds != null && <span className="shrink-0">{s.rounds}<span className="text-xs text-muted-foreground"> rounds</span></span>}
+                {s.rpe != null && <span className="shrink-0 text-xs text-muted-foreground">RPE {s.rpe}</span>}
                 {pace != null && <span className="shrink-0 text-xs text-muted-foreground">{pace.toFixed(1)} min/km</span>}
                 <button type="button" onClick={() => onDeleteSet(s.id)} aria-label="Remover" className="ml-auto shrink-0 text-muted-foreground hover:text-status-broken">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -99,9 +127,29 @@ function CardioBlock({
         </div>
       )}
 
-      <div className="grid grid-cols-[1fr_1fr_auto] gap-2">
-        <input type="number" inputMode="decimal" value={dur} onChange={(e) => setDur(e.target.value)} placeholder="min" className="min-h-10 min-w-0 rounded-lg border border-border bg-card px-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/60" />
-        <input type="number" inputMode="decimal" value={dist} onChange={(e) => setDist(e.target.value)} placeholder="km" className="min-h-10 min-w-0 rounded-lg border border-border bg-card px-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/60" />
+      <p className="text-xs text-muted-foreground">{modality.hint}</p>
+      <div className="flex flex-wrap gap-1.5">
+        {modality.metrics.map((metric) => (
+          <span
+            key={metric}
+            className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2 py-0.5 text-[10px] font-semibold text-muted-foreground"
+          >
+            {activityMetricLabels[metric]}
+          </span>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        {show('duration') ? <input type="number" min="0" step="0.1" inputMode="decimal" value={dur} onChange={(e) => setDur(e.target.value)} placeholder="Duração (min)" className={inputClass} /> : null}
+        {show('distance') ? <input type="number" min="0" step="0.01" inputMode="decimal" value={dist} onChange={(e) => setDist(e.target.value)} placeholder="Distância (km)" className={inputClass} /> : null}
+        {show('rounds') ? <input type="number" min="0" step="1" inputMode="numeric" value={rounds} onChange={(e) => setRounds(e.target.value)} placeholder="Rounds/blocos" className={inputClass} /> : null}
+        {show('rpe') ? <input type="number" min="0" max="10" step="0.5" inputMode="decimal" value={rpe} onChange={(e) => setRpe(e.target.value)} placeholder="Intensidade (RPE)" className={inputClass} /> : null}
+        {show('poolLength') ? <input type="number" min="0" step="1" inputMode="numeric" value={poolLength} onChange={(e) => setPoolLength(e.target.value)} placeholder="Piscina (m)" className={inputClass} /> : null}
+      </div>
+
+      {show('notes') ? <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Observações da sessão" rows={2} className="min-h-16 resize-none rounded-lg border border-border bg-card px-2.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/60" /> : null}
+
+      <div className="flex gap-2">
         <button
           type="button"
           disabled={!canAdd}
@@ -111,18 +159,25 @@ function CardioBlock({
               setNo: sets.length + 1,
               reps: null,
               loadKg: null,
-              rpe: null,
+              rpe: rpe === '' ? null : Number(rpe),
               technique: null,
               setType: 'work',
               durationMin: dur === '' ? null : Number(dur),
               distanceKm: dist === '' ? null : Number(dist),
+              rounds: rounds === '' ? null : Number(rounds),
+              activityMeta: poolLength === '' ? {} : { pool_length_m: Number(poolLength) },
+              notes: notes.trim() === '' ? null : notes.trim(),
             });
             setDur('');
             setDist('');
+            setRounds('');
+            setRpe('');
+            setPoolLength('');
+            setNotes('');
           }}
-          className="press min-h-10 rounded-lg bg-primary px-3 text-lg font-semibold leading-none text-primary-foreground disabled:opacity-40"
+          className="press min-h-10 flex-1 rounded-lg bg-primary px-3 text-sm font-semibold text-primary-foreground disabled:opacity-40"
         >
-          +
+          Registrar sessão
         </button>
       </div>
     </div>
@@ -297,6 +352,9 @@ function ExerciseBlock({
               setType,
               durationMin: null,
               distanceKm: null,
+              rounds: null,
+              activityMeta: {},
+              notes: null,
             });
             if (loadNum != null && prevBest > 0 && loadNum > prevBest) feedback();
             setRpe('');
@@ -334,7 +392,7 @@ export function SessionView({
   sessionId: number;
   exercises: PlanExercise[];
   userId: string;
-  onComplete: () => void;
+  onComplete: (summary: WorkoutSummary) => void;
   onCancel: () => void;
 }) {
   const qc = useQueryClient();
@@ -345,7 +403,7 @@ export function SessionView({
     queryFn: async () => {
       const { data, error } = await supabase
         .from('set_logs')
-        .select('id, exercise_id, set_no, reps, load_kg, rpe, technique, set_type, duration_min, distance_km')
+        .select('id, exercise_id, set_no, reps, load_kg, rpe, technique, set_type, duration_min, distance_km, rounds, notes, activity_meta')
         .eq('session_id', sessionId)
         .order('set_no');
       throwIfSupabaseError(error, 'sessionSets');
@@ -372,6 +430,8 @@ export function SessionView({
   });
 
   const [now, setNow] = useState(() => Date.now());
+  const [finishOpen, setFinishOpen] = useState(false);
+  const [difficulty, setDifficulty] = useState<TrainingDifficulty>('Firme');
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
@@ -390,6 +450,9 @@ export function SessionView({
         set_type: v.setType,
         duration_min: v.durationMin,
         distance_km: v.distanceKm,
+        rounds: v.rounds,
+        notes: v.notes,
+        activity_meta: v.activityMeta,
       });
       if (error) throw error;
     },
@@ -424,6 +487,11 @@ export function SessionView({
     mutationFn: async () => {
       const { error } = await supabase.rpc('complete_session', { p_session_id: sessionId });
       if (error) throw error;
+      const { error: updateError } = await supabase
+        .from('workout_sessions')
+        .update({ completed: true })
+        .eq('id', sessionId);
+      if (updateError) throw updateError;
     },
     onSuccess: () => {
       clearRest();
@@ -432,7 +500,7 @@ export function SessionView({
       qc.invalidateQueries({ queryKey: ['last-perf'] });
       qc.invalidateQueries({ queryKey: ['plans'] });
       qc.invalidateQueries({ queryKey: ['today'] });
-      onComplete();
+      onComplete(summary);
     },
   });
 
@@ -451,9 +519,14 @@ export function SessionView({
 
   const allSets = sessionSets.data ?? [];
   const custom = techniques.data ?? [];
-  const totalVolume = allSets.reduce((sum, s) => sum + (s.reps ?? 0) * (s.load_kg ?? 0), 0);
   const startedAt = sessionMeta.data?.created_at ? new Date(sessionMeta.data.created_at).getTime() : null;
   const elapsed = startedAt ? Math.max(0, Math.floor((now - startedAt) / 1000)) : null;
+  const summary: WorkoutSummary = {
+    durationSec: elapsed ?? 0,
+    sets: allSets.length,
+    exp: 50,
+    difficulty,
+  };
 
   const groups: { key: string; items: PlanExercise[] }[] = [];
   for (const pe of exercises) {
@@ -475,8 +548,8 @@ export function SessionView({
           <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Séries</div>
         </div>
         <div>
-          <div className="text-lg font-bold tabular-nums">{Math.round(totalVolume).toLocaleString('pt-BR')}</div>
-          <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Volume kg</div>
+          <div className="text-lg font-bold tabular-nums">+{summary.exp}</div>
+          <div className="text-[10px] uppercase tracking-wide text-muted-foreground">EXP</div>
         </div>
       </div>
 
@@ -509,9 +582,83 @@ export function SessionView({
         </div>
       ))}
 
-      <button type="button" disabled={complete.isPending} onClick={() => complete.mutate()} className="press min-h-12 w-full cursor-pointer rounded-2xl bg-primary text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50">
-        {complete.isPending ? 'Concluindo…' : 'Concluir treino (+50 EXP)'}
-      </button>
+      {finishOpen ? (
+        <section className="training-finish rounded-[1.75rem] border border-white/[0.08] p-5">
+          <div className="flex items-start gap-4">
+            <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-primary/[0.08] ring-1 ring-primary/20">
+              <ThiingsAsset assetKey="trophy" size={44} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-semibold uppercase text-muted-foreground">
+                Encerrar arena
+              </p>
+              <h2 className="mt-1 text-xl font-semibold leading-tight">
+                Confirmar treino concluído
+              </h2>
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Como foi a arena?
+            </p>
+            <p className="mb-3 text-xs text-muted-foreground">
+              Marque a intensidade real antes de selar o treino.
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {(['Leve', 'Firme', 'Brutal'] as TrainingDifficulty[]).map((level) => (
+                <button
+                  key={level}
+                  type="button"
+                  onClick={() => setDifficulty(level)}
+                  className={cn(
+                    'press min-h-10 rounded-xl border text-xs font-semibold transition',
+                    difficulty === level
+                      ? 'border-primary/45 bg-primary/15 text-primary'
+                      : 'border-white/[0.08] bg-white/[0.03] text-muted-foreground',
+                  )}
+                >
+                  {level}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <FinishMetric label="Tempo" value={fmt(summary.durationSec)} />
+            <FinishMetric label="Séries" value={String(summary.sets)} />
+            <FinishMetric label="Dificuldade" value={summary.difficulty} />
+            <FinishMetric label="EXP" value={`+${summary.exp}`} />
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setFinishOpen(false)}
+              className="press min-h-11 rounded-2xl border border-white/[0.08] bg-white/[0.04] text-sm font-semibold text-muted-foreground"
+            >
+              Continuar
+            </button>
+            <button
+              type="button"
+              disabled={complete.isPending}
+              onClick={() => complete.mutate()}
+              className="press min-h-11 rounded-2xl bg-primary text-sm font-semibold text-primary-foreground disabled:opacity-50"
+            >
+              {complete.isPending ? 'Concluindo…' : 'Finalizar'}
+            </button>
+          </div>
+        </section>
+      ) : (
+        <button
+          type="button"
+          disabled={complete.isPending}
+          onClick={() => setFinishOpen(true)}
+          className="press min-h-12 w-full cursor-pointer rounded-2xl bg-primary text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
+        >
+          Concluir treino (+50 EXP)
+        </button>
+      )}
 
       <button
         type="button"
@@ -523,6 +670,17 @@ export function SessionView({
       >
         {cancel.isPending ? 'Cancelando…' : 'Cancelar treino'}
       </button>
+    </div>
+  );
+}
+
+function FinishMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.04] px-4 py-3">
+      <p className="text-[10px] font-semibold uppercase text-muted-foreground">
+        {label}
+      </p>
+      <p className="mt-1 text-lg font-bold tabular-nums">{value}</p>
     </div>
   );
 }

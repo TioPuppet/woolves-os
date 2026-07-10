@@ -61,7 +61,41 @@ export type ThiingsAssetKey =
   | 'gluteo'
   | 'abdomen'
   | 'panturrilha'
-  | 'cardio';
+  | 'cardio'
+  | 'cardio-alongamento'
+  | 'cardio-basquete'
+  | 'cardio-bike-indoor'
+  | 'cardio-boxe'
+  | 'cardio-caminhada'
+  | 'cardio-caminhada-inclinada'
+  | 'cardio-caminhada-rapida'
+  | 'cardio-ciclismo'
+  | 'cardio-corrida'
+  | 'cardio-corrida-intervalada'
+  | 'cardio-danca'
+  | 'cardio-eliptico'
+  | 'cardio-escada-stepper'
+  | 'cardio-esteira'
+  | 'cardio-funcional'
+  | 'cardio-futebol'
+  | 'cardio-hiit'
+  | 'cardio-jiu-jitsu'
+  | 'cardio-judo'
+  | 'cardio-karate-shotokan'
+  | 'cardio-kickboxing'
+  | 'cardio-mma'
+  | 'cardio-mobilidade'
+  | 'cardio-muay-thai'
+  | 'cardio-natacao'
+  | 'cardio-patins'
+  | 'cardio-pilates'
+  | 'cardio-pular-corda'
+  | 'cardio-remo'
+  | 'cardio-skate'
+  | 'cardio-tenis'
+  | 'cardio-trilha-hiking'
+  | 'cardio-voley'
+  | 'cardio-yoga';
 
 export interface ThiingsAssetEntry {
   key: ThiingsAssetKey;
@@ -129,6 +163,40 @@ export const THIINGS_REGISTRY: Record<ThiingsAssetKey, ThiingsAssetEntry> = {
   abdomen: entry('abdomen', 'Abdômen', 'Grupo muscular: abdômen'),
   panturrilha: entry('panturrilha', 'Panturrilha', 'Grupo muscular: panturrilha'),
   cardio: entry('cardio', 'Cardio', 'Cardio / condicionamento'),
+  'cardio-alongamento': entry('cardio-alongamento', 'Alongamento', 'Modalidade cardio/esporte'),
+  'cardio-basquete': entry('cardio-basquete', 'Basquete', 'Modalidade cardio/esporte'),
+  'cardio-bike-indoor': entry('cardio-bike-indoor', 'Bike indoor', 'Modalidade cardio/esporte'),
+  'cardio-boxe': entry('cardio-boxe', 'Boxe', 'Modalidade cardio/esporte'),
+  'cardio-caminhada': entry('cardio-caminhada', 'Caminhada', 'Modalidade cardio/esporte'),
+  'cardio-caminhada-inclinada': entry('cardio-caminhada-inclinada', 'Caminhada inclinada', 'Modalidade cardio/esporte'),
+  'cardio-caminhada-rapida': entry('cardio-caminhada-rapida', 'Caminhada rápida', 'Modalidade cardio/esporte'),
+  'cardio-ciclismo': entry('cardio-ciclismo', 'Ciclismo', 'Modalidade cardio/esporte'),
+  'cardio-corrida': entry('cardio-corrida', 'Corrida', 'Modalidade cardio/esporte'),
+  'cardio-corrida-intervalada': entry('cardio-corrida-intervalada', 'Corrida intervalada', 'Modalidade cardio/esporte'),
+  'cardio-danca': entry('cardio-danca', 'Dança', 'Modalidade cardio/esporte'),
+  'cardio-eliptico': entry('cardio-eliptico', 'Elíptico', 'Modalidade cardio/esporte'),
+  'cardio-escada-stepper': entry('cardio-escada-stepper', 'Escada/Stepper', 'Modalidade cardio/esporte'),
+  'cardio-esteira': entry('cardio-esteira', 'Esteira', 'Modalidade cardio/esporte'),
+  'cardio-funcional': entry('cardio-funcional', 'Funcional', 'Modalidade cardio/esporte'),
+  'cardio-futebol': entry('cardio-futebol', 'Futebol', 'Modalidade cardio/esporte'),
+  'cardio-hiit': entry('cardio-hiit', 'HIIT', 'Modalidade cardio/esporte'),
+  'cardio-jiu-jitsu': entry('cardio-jiu-jitsu', 'Jiu-jitsu', 'Modalidade cardio/esporte'),
+  'cardio-judo': entry('cardio-judo', 'Judô', 'Modalidade cardio/esporte'),
+  'cardio-karate-shotokan': entry('cardio-karate-shotokan', 'Karatê Shotokan', 'Modalidade cardio/esporte'),
+  'cardio-kickboxing': entry('cardio-kickboxing', 'Kickboxing', 'Modalidade cardio/esporte'),
+  'cardio-mma': entry('cardio-mma', 'MMA', 'Modalidade cardio/esporte'),
+  'cardio-mobilidade': entry('cardio-mobilidade', 'Mobilidade', 'Modalidade cardio/esporte'),
+  'cardio-muay-thai': entry('cardio-muay-thai', 'Muay Thai', 'Modalidade cardio/esporte'),
+  'cardio-natacao': entry('cardio-natacao', 'Natação', 'Modalidade cardio/esporte'),
+  'cardio-patins': entry('cardio-patins', 'Patins', 'Modalidade cardio/esporte'),
+  'cardio-pilates': entry('cardio-pilates', 'Pilates', 'Modalidade cardio/esporte'),
+  'cardio-pular-corda': entry('cardio-pular-corda', 'Pular corda', 'Modalidade cardio/esporte'),
+  'cardio-remo': entry('cardio-remo', 'Remo', 'Modalidade cardio/esporte'),
+  'cardio-skate': entry('cardio-skate', 'Skate', 'Modalidade cardio/esporte'),
+  'cardio-tenis': entry('cardio-tenis', 'Tênis', 'Modalidade cardio/esporte'),
+  'cardio-trilha-hiking': entry('cardio-trilha-hiking', 'Trilha/Hiking', 'Modalidade cardio/esporte'),
+  'cardio-voley': entry('cardio-voley', 'Vôlei', 'Modalidade cardio/esporte'),
+  'cardio-yoga': entry('cardio-yoga', 'Yoga', 'Modalidade cardio/esporte'),
 };
 
 /** All registered keys — useful for asset-completeness checks. */

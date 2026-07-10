@@ -43,10 +43,19 @@ export interface SetLog {
   set_type: string;
   duration_min: number | null;
   distance_km: number | null;
+  rounds: number | null;
+  notes: string | null;
+  activity_meta: Record<string, unknown>;
 }
 
 export function isCardioGroup(group: string | null | undefined): boolean {
-  return group === 'cardio';
+  return (
+    group
+      ?.toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim() === 'cardio'
+  );
 }
 
 export interface LastPerf {

@@ -336,6 +336,25 @@ select::-ms-expand {
     0 26px 68px -46px hsl(46 67% 47% / 0.42);
 }
 
+.training-command {
+  background:
+    radial-gradient(95% 58% at 12% -10%, hsl(5 100% 60% / 0.12), transparent 56%),
+    radial-gradient(90% 54% at 90% -8%, hsl(46 67% 47% / 0.13), transparent 56%),
+    linear-gradient(145deg, hsl(240 5% 13% / 0.98), hsl(240 9% 7% / 0.98));
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.045),
+    0 26px 68px -46px hsl(5 100% 60% / 0.34);
+}
+
+.training-finish {
+  background:
+    radial-gradient(95% 58% at 50% -10%, hsl(46 67% 47% / 0.16), transparent 58%),
+    linear-gradient(145deg, hsl(240 5% 13% / 0.98), hsl(240 9% 7% / 0.98));
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.045),
+    0 24px 62px -44px hsl(46 67% 47% / 0.46);
+}
+
 /* Accessibility: honor reduced-motion for ambient/looping UI motion. */
 @media (prefers-reduced-motion: reduce) {
   *,

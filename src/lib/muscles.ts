@@ -17,15 +17,29 @@ export const MUSCLE_GROUPS: { key: ThiingsAssetKey; label: string }[] = [
 
 const KEYS = new Set(MUSCLE_GROUPS.map((m) => m.key as string));
 
+function normalizeGroupKey(value: string | null | undefined): string | null {
+  return (
+    value
+      ?.toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim() ?? null
+  );
+}
+
 /** Narrow a stored muscle_group string to a valid asset key, else fallback. */
 export function muscleAssetKey(
   value: string | null | undefined,
 ): ThiingsAssetKey {
-  return value && KEYS.has(value) ? (value as ThiingsAssetKey) : 'calories';
+  const normalized = normalizeGroupKey(value);
+  return normalized && KEYS.has(normalized)
+    ? (normalized as ThiingsAssetKey)
+    : 'calories';
 }
 
 /** Human label for a muscle-group key. */
 export function muscleLabel(key: string): string {
-  if (key === 'outros') return 'Outros';
-  return MUSCLE_GROUPS.find((m) => m.key === key)?.label ?? key;
+  const normalized = normalizeGroupKey(key) ?? key;
+  if (normalized === 'outros') return 'Outros';
+  return MUSCLE_GROUPS.find((m) => m.key === normalized)?.label ?? key;
 }
