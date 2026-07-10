@@ -135,6 +135,7 @@ export function TodayClient({
         title={headerTitle}
         level={level}
         streak={snapshot.streak}
+        avatarUrl={profile.avatarUrl}
       />
 
       <TodayCommand

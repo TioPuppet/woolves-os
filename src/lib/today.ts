@@ -25,6 +25,7 @@ export interface TodayProfile {
   userId: string;
   title: string | null;
   displayName: string | null;
+  avatarUrl: string | null;
   timezone: string;
   requiredHabit: string | null;
   goalWaterMl: number | null;

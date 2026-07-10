@@ -7,11 +7,13 @@ export function LevelHeader({
   title,
   level,
   streak,
+  avatarUrl,
 }: {
   eyebrow: string;
   title: string;
   level: LevelInfo;
   streak: number;
+  avatarUrl?: string | null;
 }) {
   const pct = Math.round(level.progress * 100);
 
@@ -34,8 +36,30 @@ export function LevelHeader({
       </div>
 
       <div className="surface-2 flex items-center gap-4 rounded-3xl p-4">
-        <div className="ring-gold flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-background/40">
-          <ThiingsAsset assetKey={levelAssetKey(level.level)} size={48} alt={level.title} />
+        <div className="ring-gold relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-background/40">
+          {avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={avatarUrl}
+              alt={title}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <ThiingsAsset
+              assetKey={levelAssetKey(level.level)}
+              size={48}
+              alt={level.title}
+            />
+          )}
+          {avatarUrl ? (
+            <span className="absolute bottom-0.5 right-0.5 grid h-6 w-6 place-items-center rounded-lg border border-white/10 bg-black/70 backdrop-blur">
+              <ThiingsAsset
+                assetKey={levelAssetKey(level.level)}
+                size={20}
+                alt={level.title}
+              />
+            </span>
+          ) : null}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline justify-between gap-2">

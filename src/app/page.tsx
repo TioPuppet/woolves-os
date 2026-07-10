@@ -23,7 +23,7 @@ export default async function TodayPage() {
   const { data: p, error: profileError } = await supabase
     .from('profiles')
     .select(
-      'title, display_name, timezone, required_habit, goal_water_ml, goal_protein_g, goal_kcal, goal_spend_limit_brl',
+      'title, display_name, avatar_url, timezone, required_habit, goal_water_ml, goal_protein_g, goal_kcal, goal_spend_limit_brl',
     )
     .eq('id', user.id)
     .maybeSingle();
@@ -35,6 +35,7 @@ export default async function TodayPage() {
     userId: user.id,
     title: p?.title ?? null,
     displayName: p?.display_name ?? null,
+    avatarUrl: p?.avatar_url ?? null,
     timezone,
     requiredHabit: p?.required_habit ?? null,
     goalWaterMl: p?.goal_water_ml ?? null,
