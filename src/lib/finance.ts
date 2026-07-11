@@ -12,6 +12,39 @@ export interface Transaction {
   note: string | null;
 }
 
+export interface ScheduledTransaction {
+  id: number;
+  due_date: string;
+  type: 'expense' | 'income';
+  amount_brl: number;
+  category: string | null;
+  note: string | null;
+  status: 'pending' | 'paid' | 'canceled';
+  paid_transaction_id: number | null;
+}
+
+export type DreamGoalCategory =
+  | 'viagem'
+  | 'carro'
+  | 'casa'
+  | 'negocio'
+  | 'liberdade'
+  | 'familia'
+  | 'produto'
+  | 'outro';
+
+export interface DreamGoal {
+  id: number;
+  title: string;
+  category: DreamGoalCategory;
+  target_amount_brl: number;
+  current_amount_brl: number;
+  image_url: string | null;
+  external_url: string | null;
+  notes: string | null;
+  archived: boolean;
+}
+
 export interface FinanceToday {
   spent: number;
   income: number;
@@ -125,6 +158,8 @@ export interface MonthData {
   transactions: Transaction[];
   budgets: Budget[];
   recurring: Recurring[];
+  scheduled: ScheduledTransaction[];
+  dreamGoals: DreamGoal[];
   trend: TrendPoint[];
 }
 
@@ -181,6 +216,29 @@ export async function fetchRecurring(client: SupabaseClient): Promise<Recurring[
     .order('day_of_month');
   throwIfSupabaseError(error, 'fetchRecurring');
   return (data ?? []) as Recurring[];
+}
+
+export async function fetchScheduledMonth(client: SupabaseClient, k: MonthKey): Promise<ScheduledTransaction[]> {
+  const { first, last } = monthRange(k);
+  const { data, error } = await client
+    .from('scheduled_transactions')
+    .select('id, due_date, type, amount_brl, category, note, status, paid_transaction_id')
+    .gte('due_date', first)
+    .lte('due_date', last)
+    .order('due_date', { ascending: true })
+    .order('created_at', { ascending: true });
+  throwIfSupabaseError(error, 'fetchScheduledMonth');
+  return (data ?? []) as ScheduledTransaction[];
+}
+
+export async function fetchDreamGoals(client: SupabaseClient): Promise<DreamGoal[]> {
+  const { data, error } = await client
+    .from('dream_goals')
+    .select('id, title, category, target_amount_brl, current_amount_brl, image_url, external_url, notes, archived')
+    .eq('archived', false)
+    .order('created_at', { ascending: false });
+  throwIfSupabaseError(error, 'fetchDreamGoals');
+  return (data ?? []) as DreamGoal[];
 }
 
 export async function fetchTrend(

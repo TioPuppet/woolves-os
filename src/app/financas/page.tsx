@@ -4,7 +4,9 @@ import { throwIfSupabaseError } from '@/lib/supabase/errors';
 import {
   fetchMonth,
   fetchBudgets,
+  fetchDreamGoals,
   fetchRecurring,
+  fetchScheduledMonth,
   fetchTrend,
   currentMonthKey,
   type MonthData,
@@ -29,13 +31,15 @@ export default async function FinancasPage() {
   const dailyLimit = profile?.goal_spend_limit_brl ?? null;
   const monthKey = currentMonthKey(timezone);
 
-  const [transactions, budgets, recurring, trend] = await Promise.all([
+  const [transactions, budgets, recurring, scheduled, dreamGoals, trend] = await Promise.all([
     fetchMonth(supabase, monthKey),
     fetchBudgets(supabase),
     fetchRecurring(supabase),
+    fetchScheduledMonth(supabase, monthKey),
+    fetchDreamGoals(supabase),
     fetchTrend(supabase, timezone),
   ]);
-  const initial: MonthData = { transactions, budgets, recurring, trend };
+  const initial: MonthData = { transactions, budgets, recurring, scheduled, dreamGoals, trend };
 
   return (
     <FinanceClient

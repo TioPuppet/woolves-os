@@ -3,14 +3,19 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import {
+  fetchDreamGoals,
   fetchMonth,
   fetchBudgets,
   fetchRecurring,
+  fetchScheduledMonth,
   fetchTrend,
   currentMonthKey,
+  type DreamGoal,
+  type DreamGoalCategory,
   type MonthKey,
   type MonthData,
   type Recurring,
+  type ScheduledTransaction,
 } from '@/lib/finance';
 
 export interface TxPatch {
@@ -21,6 +26,16 @@ export interface TxPatch {
   ref_date?: string;
 }
 export type RecurringDraft = Omit<Recurring, 'id'>;
+export type ScheduledDraft = Omit<ScheduledTransaction, 'id' | 'status' | 'paid_transaction_id'>;
+export type DreamGoalDraft = {
+  title: string;
+  category: DreamGoalCategory;
+  target_amount_brl: number;
+  current_amount_brl: number;
+  image_url: string | null;
+  external_url: string | null;
+  notes: string | null;
+};
 
 export function useFinance(
   userId: string,
@@ -51,6 +66,18 @@ export function useFinance(
     initialData: initial.recurring,
     staleTime: 30_000,
   });
+  const scheduledQ = useQuery({
+    queryKey: ['finance-scheduled', userId, monthKey.year, monthKey.month],
+    queryFn: () => fetchScheduledMonth(supabase, monthKey),
+    initialData: isCurrent ? initial.scheduled : undefined,
+    staleTime: 10_000,
+  });
+  const dreamGoalsQ = useQuery({
+    queryKey: ['finance-dream-goals', userId],
+    queryFn: () => fetchDreamGoals(supabase),
+    initialData: initial.dreamGoals,
+    staleTime: 30_000,
+  });
   const trendQ = useQuery({
     queryKey: ['finance-trend', userId, timezone],
     queryFn: () => fetchTrend(supabase, timezone),
@@ -60,6 +87,7 @@ export function useFinance(
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ['finance-month'] });
+    qc.invalidateQueries({ queryKey: ['finance-scheduled'] });
     qc.invalidateQueries({ queryKey: ['finance-trend'] });
     qc.invalidateQueries({ queryKey: ['today'] });
   };
@@ -165,10 +193,79 @@ export function useFinance(
     onSuccess: invalidate,
   });
 
+  const addScheduled = useMutation({
+    mutationFn: async (d: ScheduledDraft) => {
+      const { error } = await supabase
+        .from('scheduled_transactions')
+        .insert({ user_id: userId, status: 'pending', ...d });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['finance-scheduled'] }),
+  });
+
+  const payScheduled = useMutation({
+    mutationFn: async (id: number) => {
+      const { error } = await supabase.rpc('pay_scheduled_transaction', { p_id: id });
+      if (error) throw error;
+    },
+    onSuccess: invalidate,
+  });
+
+  const cancelScheduled = useMutation({
+    mutationFn: async (id: number) => {
+      const { error } = await supabase
+        .from('scheduled_transactions')
+        .update({ status: 'canceled' })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['finance-scheduled'] }),
+  });
+
+  const deleteScheduled = useMutation({
+    mutationFn: async (id: number) => {
+      const { error } = await supabase.from('scheduled_transactions').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['finance-scheduled'] }),
+  });
+
+  const addDreamGoal = useMutation({
+    mutationFn: async (d: DreamGoalDraft) => {
+      const { error } = await supabase
+        .from('dream_goals')
+        .insert({ user_id: userId, archived: false, ...d });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['finance-dream-goals'] }),
+  });
+
+  const contributeDreamGoal = useMutation({
+    mutationFn: async (v: { id: number; amount: number }) => {
+      const { error } = await supabase.rpc('add_dream_goal_contribution', {
+        p_goal_id: v.id,
+        p_amount: v.amount,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['finance-dream-goals'] }),
+  });
+
+  const updateDreamGoal = useMutation({
+    mutationFn: async (v: { id: number } & Partial<DreamGoal>) => {
+      const { id, ...patch } = v;
+      const { error } = await supabase.from('dream_goals').update(patch).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['finance-dream-goals'] }),
+  });
+
   return {
     transactions: monthQ.data ?? [],
     budgets: budgetsQ.data ?? [],
     recurring: recurringQ.data ?? [],
+    scheduled: scheduledQ.data ?? [],
+    dreamGoals: dreamGoalsQ.data ?? [],
     trend: trendQ.data ?? [],
     logTransaction,
     updateTransaction,
@@ -179,5 +276,12 @@ export function useFinance(
     updateRecurring,
     deleteRecurring,
     applyRecurring,
+    addScheduled,
+    payScheduled,
+    cancelScheduled,
+    deleteScheduled,
+    addDreamGoal,
+    contributeDreamGoal,
+    updateDreamGoal,
   };
 }
