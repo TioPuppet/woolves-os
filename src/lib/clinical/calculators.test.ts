@@ -15,6 +15,9 @@ import {
   idealBodyWeight,
   adjustedBodyWeight,
   maintenanceFluids,
+  syrupVolume,
+  oralDrops,
+  pediatricAntibioticDose,
 } from './calculators';
 
 describe('cockcroftGault', () => {
@@ -66,6 +69,27 @@ describe('infusionRate', () => {
   it('microgotas (60) dobra as gotas', () => {
     const r = infusionRate({ volumeMl: 1000, hours: 8, dropFactor: 60 });
     expect(r?.dropsPerMin).toBe(125);
+  });
+});
+
+describe('oral medication conversions', () => {
+  it('converts syrup concentration to volume', () => {
+    expect(syrupVolume({ doseMg: 250, concentrationMg: 250, concentrationMl: 5 })).toBe(5);
+  });
+
+  it('converts oral drops to mL and drops', () => {
+    expect(oralDrops({ doseMg: 20, concentrationMgPerMl: 10, dropsPerMl: 20 })).toEqual({ volumeMl: 2, drops: 40 });
+  });
+
+  it('calculates a manually supplied pediatric antibiotic protocol', () => {
+    expect(pediatricAntibioticDose({
+      weightKg: 20,
+      doseMgKgPerDose: 10,
+      dosesPerDay: 2,
+      concentrationMg: 250,
+      concentrationMl: 5,
+      maxMgPerDose: 150,
+    })).toEqual({ doseMg: 150, dailyMg: 300, volumeMl: 3, capped: true });
   });
 });
 

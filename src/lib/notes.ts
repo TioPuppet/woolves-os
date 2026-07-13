@@ -5,6 +5,9 @@ export interface Note {
   id: number;
   content: string;
   updated_at: string;
+  tags: string[];
+  pinned: boolean;
+  archived: boolean;
 }
 
 /* ------------------------------------------------------------- Block model */
@@ -106,6 +109,16 @@ export function notePreview(content: string): string {
   return rest || 'Página vazia';
 }
 
+export function noteLinks(content: string): string[] {
+  const links = new Set<string>();
+  const pattern = /\[\[([^\]]+)\]\]/g;
+  for (const match of content.matchAll(pattern)) {
+    const label = match[1]?.trim();
+    if (label) links.add(label);
+  }
+  return [...links];
+}
+
 export function noteDate(iso: string): string {
   const d = new Date(iso);
   const today = new Date();
@@ -116,10 +129,34 @@ export function noteDate(iso: string): string {
 }
 
 export async function fetchNotes(client: SupabaseClient): Promise<Note[]> {
-  const { data, error } = await client
+  const current = await client
+    .from('notes')
+    .select('id, content, updated_at, tags, pinned, archived')
+    .eq('archived', false)
+    .order('updated_at', { ascending: false });
+  if (!current.error) {
+    return (current.data ?? []).map((note) => ({
+      ...(note as Note),
+      tags: Array.isArray(note.tags) ? note.tags : [],
+      pinned: Boolean(note.pinned),
+      archived: Boolean(note.archived),
+    }));
+  }
+
+  if (!/column .*notes\.(tags|pinned|archived) does not exist/i.test(current.error.message ?? '')) {
+    throwIfSupabaseError(current.error, 'fetchNotes');
+  }
+
+  // Keep the workspace readable while a deployed database is being migrated.
+  const legacy = await client
     .from('notes')
     .select('id, content, updated_at')
     .order('updated_at', { ascending: false });
-  throwIfSupabaseError(error, 'fetchNotes');
-  return (data ?? []) as Note[];
+  throwIfSupabaseError(legacy.error, 'fetchNotes');
+  return (legacy.data ?? []).map((note) => ({
+    ...(note as Note),
+    tags: [],
+    pinned: false,
+    archived: false,
+  }));
 }

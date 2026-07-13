@@ -9,6 +9,7 @@ import {
   type InteractionDraft,
   type Severity,
 } from '@/lib/clinical/drugs';
+import { CLINICAL_SOURCES } from '@/lib/clinical/sources';
 
 const SEVERITIES: Severity[] = ['contraindicada', 'grave', 'moderada', 'leve'];
 
@@ -84,6 +85,7 @@ export function InteractionsTab({
 
   const addChip = (name: string) => {
     const v = name.trim();
+    if (selected.length >= 10) return;
     if (v && !selected.some((s) => s.toLowerCase() === v.toLowerCase())) {
       setSelected((s) => [...s, v]);
     }
@@ -94,7 +96,13 @@ export function InteractionsTab({
     <div className="flex flex-col gap-5">
       {/* Verificador */}
       <section className="flex flex-col gap-3">
-        <h3 className="text-sm font-semibold">Verificar interações</h3>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h3 className="text-sm font-semibold">Verificar interações</h3>
+            <p className="mt-1 text-xs text-muted-foreground">Base local de curadoria. A consulta ampliada fica no Drugs.com.</p>
+          </div>
+          <a href={CLINICAL_SOURCES.drugsInteractionChecker} target="_blank" rel="noreferrer" className="press shrink-0 text-xs font-semibold text-primary">Abrir fonte</a>
+        </div>
         <div className="flex gap-2">
           <input
             list="drug-names"
@@ -115,7 +123,7 @@ export function InteractionsTab({
             disabled={!entry.trim()}
             className="press rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-40"
           >
-            Add
+            Adicionar
           </button>
         </div>
 
@@ -133,6 +141,8 @@ export function InteractionsTab({
             ))}
           </div>
         )}
+
+        <p className="text-[11px] text-muted-foreground">{selected.length}/10 medicamentos selecionados</p>
 
         {selected.length >= 2 && (
           results.length > 0 ? (

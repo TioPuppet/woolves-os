@@ -15,7 +15,7 @@ const TABS: { href: string; label: string; icon: ThiingsAssetKey }[] = [
   { href: '/', label: 'Hoje', icon: 'today' },
   { href: '/treino', label: 'Treino', icon: 'calories' },
   { href: '/financas', label: 'Finanças', icon: 'finances' },
-  { href: '/sono', label: 'Sono', icon: 'sleep' },
+  { href: '/nutricao', label: 'Nutrição', icon: 'alimentacao' },
 ];
 
 // Everything accessible from the Woolves IA hub.
@@ -23,7 +23,6 @@ const HUB: { href: string; label: string; icon: ThiingsAssetKey }[] = [
   { href: '/relatorio', label: 'Relatório', icon: 'ai' },
   { href: '/', label: 'Hoje', icon: 'today' },
   { href: '/treino', label: 'Treino', icon: 'calories' },
-  { href: '/nutricao', label: 'Nutrição', icon: 'alimentacao' },
   { href: '/financas', label: 'Finanças', icon: 'finances' },
   { href: '/sono', label: 'Sono', icon: 'sleep' },
   { href: '/notas', label: 'Espaço', icon: 'journal' },
@@ -118,6 +117,7 @@ export function BottomNav() {
 
   const isActive = (href: string) =>
     href === '/' ? pathname === '/' : pathname.startsWith(href);
+  const hubActive = hubOpen || pathname.startsWith('/sono');
 
   return (
     <>
@@ -165,7 +165,9 @@ export function BottomNav() {
                 'press -mt-7 flex h-16 w-16 flex-col items-center justify-center rounded-full',
                 'border border-[hsl(var(--ia)/0.5)] bg-[hsl(var(--ia)/0.18)] backdrop-blur',
                 'shadow-[0_10px_30px_-8px_hsl(var(--ia)/0.6)]',
+                hubActive && 'ring-2 ring-[hsl(var(--ia)/0.35)]',
               )}
+              aria-expanded={hubOpen}
             >
               <ThiingsAsset assetKey="ai" size={34} />
             </button>

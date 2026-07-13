@@ -52,6 +52,7 @@ export function useFinance(
     queryKey: ['finance-month', userId, monthKey.year, monthKey.month],
     queryFn: () => fetchMonth(supabase, monthKey),
     initialData: isCurrent ? initial.transactions : undefined,
+    placeholderData: (previousData) => previousData,
     staleTime: 10_000,
   });
   const budgetsQ = useQuery({
@@ -70,6 +71,7 @@ export function useFinance(
     queryKey: ['finance-scheduled', userId, monthKey.year, monthKey.month],
     queryFn: () => fetchScheduledMonth(supabase, monthKey),
     initialData: isCurrent ? initial.scheduled : undefined,
+    placeholderData: (previousData) => previousData,
     staleTime: 10_000,
   });
   const dreamGoalsQ = useQuery({

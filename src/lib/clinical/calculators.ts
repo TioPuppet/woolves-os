@@ -71,6 +71,73 @@ export function doseByWeight(input: {
   return { dose: round(raw, 2), capped: false };
 }
 
+/** Converte uma dose prescrita em mg para volume de xarope. */
+export function syrupVolume(input: {
+  doseMg: number;
+  concentrationMg: number;
+  concentrationMl: number;
+}): number | null {
+  const { doseMg, concentrationMg, concentrationMl } = input;
+  if (!pos(doseMg) || !pos(concentrationMg) || !pos(concentrationMl)) return null;
+  return round((doseMg * concentrationMl) / concentrationMg, 2);
+}
+
+/** Converte uma dose em mg para mL e gotas de uma solução oral. */
+export function oralDrops(input: {
+  doseMg: number;
+  concentrationMgPerMl: number;
+  dropsPerMl: number;
+}): { volumeMl: number; drops: number } | null {
+  const { doseMg, concentrationMgPerMl, dropsPerMl } = input;
+  if (!pos(doseMg) || !pos(concentrationMgPerMl) || !pos(dropsPerMl)) return null;
+  const volumeMl = doseMg / concentrationMgPerMl;
+  return { volumeMl: round(volumeMl, 2), drops: Math.round(volumeMl * dropsPerMl) };
+}
+
+/**
+ * Calcula uma administração pediátrica a partir de um protocolo informado
+ * pelo profissional. O sistema não fornece dose terapêutica automática.
+ */
+export function pediatricAntibioticDose(input: {
+  weightKg: number;
+  doseMgKgPerDose: number;
+  dosesPerDay: number;
+  concentrationMg: number;
+  concentrationMl: number;
+  maxMgPerDose?: number | null;
+  maxMgPerDay?: number | null;
+}): { doseMg: number; dailyMg: number; volumeMl: number; capped: boolean } | null {
+  const {
+    weightKg,
+    doseMgKgPerDose,
+    dosesPerDay,
+    concentrationMg,
+    concentrationMl,
+    maxMgPerDose,
+    maxMgPerDay,
+  } = input;
+  if (!pos(weightKg) || !pos(doseMgKgPerDose) || !pos(dosesPerDay)) return null;
+  const volumeMl = syrupVolume({ doseMg: 1, concentrationMg, concentrationMl });
+  if (volumeMl == null) return null;
+
+  let doseMg = weightKg * doseMgKgPerDose;
+  let capped = false;
+  if (pos(maxMgPerDose) && doseMg > maxMgPerDose) {
+    doseMg = maxMgPerDose;
+    capped = true;
+  }
+  if (pos(maxMgPerDay) && doseMg * dosesPerDay > maxMgPerDay) {
+    doseMg = maxMgPerDay / dosesPerDay;
+    capped = true;
+  }
+  return {
+    doseMg: round(doseMg, 2),
+    dailyMg: round(doseMg * dosesPerDay, 2),
+    volumeMl: round(doseMg * volumeMl, 2),
+    capped,
+  };
+}
+
 /**
  * Velocidade de infusão.
  * mL/h = volume / tempo(h);  gotas/min = (volume × fator gotejo) / tempo(min).

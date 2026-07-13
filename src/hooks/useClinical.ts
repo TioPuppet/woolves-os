@@ -6,7 +6,11 @@ import {
   fetchDrugs,
   fetchInteractions,
   DRUG_FIELDS,
+  LEGACY_DRUG_FIELDS,
   INTERACTION_FIELDS,
+  hasMissingAnvisaColumns,
+  legacyDrugDraft,
+  legacyDrugPatch,
   type Drug,
   type DrugDraft,
   type DrugInteraction,
@@ -28,13 +32,29 @@ export function useDrugs(userId: string, initial: Drug[]) {
 
   const createDrug = useMutation({
     mutationFn: async (draft: DrugDraft) => {
-      const { data, error } = await supabase
+      const current = await supabase
         .from('drugs')
         .insert({ user_id: userId, ...draft })
         .select(DRUG_FIELDS)
         .single();
-      if (error) throw error;
-      return data as Drug;
+      if (!current.error) return current.data as Drug;
+      if (!hasMissingAnvisaColumns(current.error)) throw current.error;
+
+      const legacy = await supabase
+        .from('drugs')
+        .insert({ user_id: userId, ...legacyDrugDraft(draft) })
+        .select(LEGACY_DRUG_FIELDS)
+        .single();
+      if (legacy.error) throw legacy.error;
+      return {
+        ...(legacy.data as Omit<Drug, 'active_ingredient' | 'anvisa_company' | 'anvisa_registration' | 'anvisa_published_at' | 'anvisa_professional_url' | 'anvisa_patient_url'>),
+        active_ingredient: null,
+        anvisa_company: null,
+        anvisa_registration: null,
+        anvisa_published_at: null,
+        anvisa_professional_url: null,
+        anvisa_patient_url: null,
+      };
     },
     onSuccess: invalidate,
   });
@@ -42,8 +62,12 @@ export function useDrugs(userId: string, initial: Drug[]) {
   const updateDrug = useMutation({
     mutationFn: async (v: { id: number } & Partial<DrugDraft>) => {
       const { id, ...patch } = v;
-      const { error } = await supabase.from('drugs').update(patch).eq('id', id);
-      if (error) throw error;
+      const current = await supabase.from('drugs').update(patch).eq('id', id);
+      if (!current.error) return;
+      if (!hasMissingAnvisaColumns(current.error)) throw current.error;
+
+      const legacy = await supabase.from('drugs').update(legacyDrugPatch(patch)).eq('id', id);
+      if (legacy.error) throw legacy.error;
     },
     onSuccess: invalidate,
   });

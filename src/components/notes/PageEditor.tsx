@@ -24,11 +24,13 @@ export function PageEditor({
   note,
   onBack,
   onSave,
+  onMetaChange,
   onDelete,
 }: {
   note: Note;
   onBack: () => void;
   onSave: (content: string) => void;
+  onMetaChange: (patch: { tags?: string[]; pinned?: boolean }) => void;
   onDelete: () => void;
 }) {
   const initial = useMemo(() => parseDoc(note.content), [note.id]);
@@ -36,6 +38,7 @@ export function PageEditor({
   const [blocks, setBlocks] = useState<Block[]>(initial.blocks);
   const [slashFor, setSlashFor] = useState<string | null>(null);
   const [iconOpen, setIconOpen] = useState(false);
+  const [tagText, setTagText] = useState(note.tags.join(', '));
 
   const refs = useRef<Record<string, HTMLTextAreaElement | null>>({});
   const pendingFocus = useRef<string | null>(null);
@@ -201,6 +204,40 @@ export function PageEditor({
             ))}
           </div>
         )}
+      </div>
+
+      <div className="mb-5 flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => onMetaChange({ pinned: !note.pinned })}
+          className={`press inline-flex min-h-9 items-center gap-2 rounded-xl border px-3 text-xs font-semibold ${
+            note.pinned
+              ? 'border-primary/45 bg-primary/12 text-primary'
+              : 'border-border text-muted-foreground'
+          }`}
+        >
+          <span aria-hidden>{note.pinned ? '★' : '☆'}</span>
+          {note.pinned ? 'Fixada' : 'Fixar página'}
+        </button>
+        <label className="flex min-h-9 min-w-[12rem] flex-1 items-center rounded-xl border border-border bg-card/40 px-3">
+          <span className="mr-2 text-xs text-muted-foreground">Tags</span>
+          <input
+            value={tagText}
+            onChange={(event) => setTagText(event.target.value)}
+            onBlur={() =>
+              onMetaChange({
+                tags: tagText
+                  .split(',')
+                  .map((tag) => tag.trim().toLowerCase())
+                  .filter(Boolean)
+                  .filter((tag, index, list) => list.indexOf(tag) === index),
+              })
+            }
+            placeholder="ideia, estudo, projeto"
+            className="min-w-0 flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground/60"
+            aria-label="Tags da página"
+          />
+        </label>
       </div>
 
       <div className="flex flex-col">

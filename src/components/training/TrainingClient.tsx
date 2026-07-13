@@ -1,5 +1,6 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -20,7 +21,10 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { localDayString } from '@/lib/date';
 import { SessionView } from './SessionView';
 import type { WorkoutSummary } from './SessionView';
-import { ExerciseHistorySheet } from './ExerciseHistorySheet';
+const ExerciseHistorySheet = dynamic(
+  () => import('./ExerciseHistorySheet').then((mod) => mod.ExerciseHistorySheet),
+  { ssr: false },
+);
 import {
   activityMetricLabels,
   describeActivityMetrics,

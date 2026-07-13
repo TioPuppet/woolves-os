@@ -487,11 +487,6 @@ export function SessionView({
     mutationFn: async () => {
       const { error } = await supabase.rpc('complete_session', { p_session_id: sessionId });
       if (error) throw error;
-      const { error: updateError } = await supabase
-        .from('workout_sessions')
-        .update({ completed: true })
-        .eq('id', sessionId);
-      if (updateError) throw updateError;
     },
     onSuccess: () => {
       clearRest();

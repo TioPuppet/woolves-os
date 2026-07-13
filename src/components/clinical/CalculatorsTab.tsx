@@ -1,422 +1,262 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import {
-  cockcroftGault,
-  renalStage,
-  ckdEpi2021,
-  correctedCalcium,
-  correctedSodium,
-  anionGap,
-  meanArterialPressure,
-  qtc,
-  bmi,
-  bsaMosteller,
-  idealBodyWeight,
-  adjustedBodyWeight,
-  doseByWeight,
-  maintenanceFluids,
-  infusionRate,
-  type Sex,
+  oralDrops,
+  pediatricAntibioticDose,
+  syrupVolume,
 } from '@/lib/clinical/calculators';
+import { CLINICAL_SOURCES } from '@/lib/clinical/sources';
+
+type CalculatorView = 'syrup' | 'drops' | 'antibiotic';
+
+const ANTIBIOTICS = [
+  'Amoxicilina',
+  'Amoxicilina + clavulanato',
+  'Azitromicina',
+  'Cefalexina',
+  'Cefuroxima',
+  'Claritromicina',
+  'Clindamicina',
+  'Sulfametoxazol + trimetoprima',
+  'Outro protocolo',
+];
 
 function Field({
   label,
   value,
   onChange,
   suffix,
+  placeholder,
 }: {
   label: string;
   value: string;
-  onChange: (v: string) => void;
+  onChange: (value: string) => void;
   suffix?: string;
+  placeholder?: string;
 }) {
   return (
-    <label className="flex flex-col gap-1">
+    <label className="flex min-w-0 flex-col gap-1.5">
       <span className="text-xs font-medium text-muted-foreground">{label}</span>
-      <div className="flex items-center gap-2">
+      <span className="flex min-w-0 items-center gap-2 rounded-2xl border border-border bg-card px-3 focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/15">
         <input
           type="number"
           inputMode="decimal"
           step="any"
           value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="min-h-10 w-full min-w-0 rounded-lg border border-border bg-card px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={placeholder}
+          className="min-h-11 min-w-0 flex-1 bg-transparent text-base text-foreground outline-none placeholder:text-muted-foreground/60"
         />
         {suffix && <span className="shrink-0 text-xs text-muted-foreground">{suffix}</span>}
-      </div>
+      </span>
     </label>
   );
 }
 
-function SexToggle({ sex, onChange }: { sex: Sex; onChange: (s: Sex) => void }) {
+function TextField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
   return (
-    <div className="flex flex-col gap-1">
-      <span className="text-xs font-medium text-muted-foreground">Sexo</span>
-      <div className="flex gap-2">
-        {(['M', 'F'] as const).map((s) => (
-          <button
-            key={s}
-            type="button"
-            onClick={() => onChange(s)}
-            className={`press min-h-10 flex-1 rounded-lg border text-sm font-medium ${
-              sex === s ? 'border-primary/50 bg-primary/15 text-primary' : 'border-border text-muted-foreground'
-            }`}
-          >
-            {s === 'M' ? 'Masc.' : 'Fem.'}
-          </button>
-        ))}
-      </div>
-    </div>
+    <label className="flex min-w-0 flex-col gap-1.5">
+      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+      <input
+        list="clinical-antibiotics"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="min-h-11 rounded-2xl border border-border bg-card px-3 text-base outline-none placeholder:text-muted-foreground/60 focus:border-primary/60 focus:ring-2 focus:ring-primary/15"
+        placeholder="Selecione ou digite"
+      />
+    </label>
   );
 }
 
-function Card({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
+function Panel({ title, subtitle, children }: { title: string; subtitle: string; children: ReactNode }) {
   return (
-    <section className="surface-2 flex flex-col gap-3 rounded-2xl p-4">
-      <div>
-        <h3 className="text-sm font-semibold">{title}</h3>
-        <p className="text-xs text-muted-foreground">{subtitle}</p>
+    <section className="surface-2 rounded-2xl p-4 sm:p-5">
+      <div className="mb-4">
+        <h2 className="text-base font-semibold">{title}</h2>
+        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{subtitle}</p>
       </div>
       {children}
     </section>
   );
 }
 
-function Result({ children }: { children: React.ReactNode }) {
-  return <div className="rounded-xl bg-card px-4 py-3 text-sm">{children}</div>;
+function Output({ children }: { children: ReactNode }) {
+  return <div className="mt-4 rounded-2xl border border-primary/25 bg-primary/10 p-4">{children}</div>;
 }
 
-function Big({ v, unit, tone }: { v: number | string; unit?: string; tone?: string }) {
+function SourceLinks() {
   return (
-    <span>
-      <span className="text-lg font-bold" style={tone ? { color: `hsl(${tone})` } : undefined}>
-        {v}
-      </span>
-      {unit ? <span className="text-muted-foreground"> {unit}</span> : null}
-    </span>
-  );
-}
-
-function SectionTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 className="mt-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-      {children}
-    </h2>
-  );
-}
-
-/* ---------------------------------------------------------------- Renal ---- */
-
-function CockcroftGault() {
-  const [age, setAge] = useState('');
-  const [weight, setWeight] = useState('');
-  const [cr, setCr] = useState('');
-  const [sex, setSex] = useState<Sex>('M');
-  const crcl = cockcroftGault({ ageYears: Number(age), weightKg: Number(weight), serumCreatinineMgDl: Number(cr), sex });
-  return (
-    <Card title="Clearance de creatinina" subtitle="Cockcroft-Gault (mL/min)">
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Idade" value={age} onChange={setAge} suffix="anos" />
-        <Field label="Peso" value={weight} onChange={setWeight} suffix="kg" />
-        <Field label="Creatinina" value={cr} onChange={setCr} suffix="mg/dL" />
-        <SexToggle sex={sex} onChange={setSex} />
-      </div>
-      {crcl != null && (
-        <Result>
-          {(() => {
-            const st = renalStage(crcl);
-            return (
-              <div className="flex items-center justify-between">
-                <Big v={crcl} unit="mL/min" />
-                <span className="rounded-md px-2 py-0.5 text-xs font-semibold" style={{ color: `hsl(${st.tone})`, backgroundColor: `hsl(${st.tone} / 0.15)` }}>
-                  {st.code} · {st.label}
-                </span>
-              </div>
-            );
-          })()}
-        </Result>
-      )}
-    </Card>
-  );
-}
-
-function CkdEpi() {
-  const [age, setAge] = useState('');
-  const [cr, setCr] = useState('');
-  const [sex, setSex] = useState<Sex>('M');
-  const e = ckdEpi2021({ ageYears: Number(age), serumCreatinineMgDl: Number(cr), sex });
-  return (
-    <Card title="TFG estimada" subtitle="CKD-EPI 2021 (mL/min/1,73m²)">
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Idade" value={age} onChange={setAge} suffix="anos" />
-        <Field label="Creatinina" value={cr} onChange={setCr} suffix="mg/dL" />
-        <SexToggle sex={sex} onChange={setSex} />
-      </div>
-      {e != null && (
-        <Result>
-          {(() => {
-            const st = renalStage(e);
-            return (
-              <div className="flex items-center justify-between">
-                <Big v={e} unit="mL/min/1,73m²" />
-                <span className="rounded-md px-2 py-0.5 text-xs font-semibold" style={{ color: `hsl(${st.tone})`, backgroundColor: `hsl(${st.tone} / 0.15)` }}>
-                  {st.code}
-                </span>
-              </div>
-            );
-          })()}
-        </Result>
-      )}
-    </Card>
-  );
-}
-
-function CorrectedCa() {
-  const [ca, setCa] = useState('');
-  const [alb, setAlb] = useState('');
-  const r = correctedCalcium({ calciumMgDl: Number(ca), albuminGDl: Number(alb) });
-  return (
-    <Card title="Cálcio corrigido" subtitle="pela albumina (mg/dL)">
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Cálcio" value={ca} onChange={setCa} suffix="mg/dL" />
-        <Field label="Albumina" value={alb} onChange={setAlb} suffix="g/dL" />
-      </div>
-      {r != null && <Result><Big v={r} unit="mg/dL" /></Result>}
-    </Card>
-  );
-}
-
-function CorrectedNa() {
-  const [na, setNa] = useState('');
-  const [glu, setGlu] = useState('');
-  const r = correctedSodium({ sodium: Number(na), glucoseMgDl: Number(glu) });
-  return (
-    <Card title="Sódio corrigido" subtitle="pela glicemia (mEq/L)">
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Sódio" value={na} onChange={setNa} suffix="mEq/L" />
-        <Field label="Glicemia" value={glu} onChange={setGlu} suffix="mg/dL" />
-      </div>
-      {r != null && <Result><Big v={r} unit="mEq/L" /></Result>}
-    </Card>
-  );
-}
-
-function AnionGap() {
-  const [na, setNa] = useState('');
-  const [cl, setCl] = useState('');
-  const [hco3, setHco3] = useState('');
-  const [alb, setAlb] = useState('');
-  const r = anionGap({ sodium: Number(na), chloride: Number(cl), bicarbonate: Number(hco3), albuminGDl: alb ? Number(alb) : null });
-  return (
-    <Card title="Ânion gap" subtitle="Na − (Cl + HCO₃); corrigido opcional">
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Sódio" value={na} onChange={setNa} suffix="mEq/L" />
-        <Field label="Cloro" value={cl} onChange={setCl} suffix="mEq/L" />
-        <Field label="Bicarbonato" value={hco3} onChange={setHco3} suffix="mEq/L" />
-        <Field label="Albumina" value={alb} onChange={setAlb} suffix="g/dL" />
-      </div>
-      {r != null && (
-        <Result>
-          <div className="flex items-center justify-between">
-            <Big v={r.gap} unit="mEq/L" />
-            {r.corrected != null && <span className="text-xs text-muted-foreground">corrigido: <span className="font-semibold text-foreground">{r.corrected}</span></span>}
-          </div>
-        </Result>
-      )}
-    </Card>
-  );
-}
-
-/* ------------------------------------------------------------- Cardio ------ */
-
-function Map() {
-  const [sbp, setSbp] = useState('');
-  const [dbp, setDbp] = useState('');
-  const r = meanArterialPressure({ systolic: Number(sbp), diastolic: Number(dbp) });
-  return (
-    <Card title="Pressão arterial média (PAM)" subtitle="(PAS + 2×PAD) / 3">
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="PAS" value={sbp} onChange={setSbp} suffix="mmHg" />
-        <Field label="PAD" value={dbp} onChange={setDbp} suffix="mmHg" />
-      </div>
-      {r != null && (
-        <Result>
-          <div className="flex items-center justify-between">
-            <Big v={r} unit="mmHg" />
-            {r < 65 ? <span className="text-xs font-semibold text-status-broken">abaixo de 65 — hipoperfusão</span> : null}
-          </div>
-        </Result>
-      )}
-    </Card>
-  );
-}
-
-function Qtc() {
-  const [qt, setQt] = useState('');
-  const [hr, setHr] = useState('');
-  const r = qtc({ qtMs: Number(qt), heartRate: Number(hr) });
-  return (
-    <Card title="QT corrigido (QTc)" subtitle="Bazett e Fridericia (ms)">
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="QT" value={qt} onChange={setQt} suffix="ms" />
-        <Field label="FC" value={hr} onChange={setHr} suffix="bpm" />
-      </div>
-      {r != null && (
-        <Result>
-          <div className="flex items-center justify-between">
-            <span>Bazett: <Big v={r.bazett} unit="ms" /></span>
-            <span>Fridericia: <Big v={r.fridericia} unit="ms" /></span>
-          </div>
-        </Result>
-      )}
-    </Card>
-  );
-}
-
-/* -------------------------------------------------- Antropometria & dose --- */
-
-function Bmi() {
-  const [w, setW] = useState('');
-  const [h, setH] = useState('');
-  const r = bmi({ weightKg: Number(w), heightCm: Number(h) });
-  return (
-    <Card title="IMC" subtitle="Índice de massa corporal (kg/m²)">
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Peso" value={w} onChange={setW} suffix="kg" />
-        <Field label="Altura" value={h} onChange={setH} suffix="cm" />
-      </div>
-      {r != null && (
-        <Result>
-          <div className="flex items-center justify-between">
-            <Big v={r.value} unit="kg/m²" />
-            <span className="rounded-md px-2 py-0.5 text-xs font-semibold" style={{ color: `hsl(${r.category.tone})`, backgroundColor: `hsl(${r.category.tone} / 0.15)` }}>
-              {r.category.label}
-            </span>
-          </div>
-        </Result>
-      )}
-    </Card>
-  );
-}
-
-function BodyWeight() {
-  const [w, setW] = useState('');
-  const [h, setH] = useState('');
-  const [sex, setSex] = useState<Sex>('M');
-  const ibw = idealBodyWeight({ heightCm: Number(h), sex });
-  const adj = adjustedBodyWeight({ weightKg: Number(w), heightCm: Number(h), sex });
-  const bsa = bsaMosteller({ heightCm: Number(h), weightKg: Number(w) });
-  return (
-    <Card title="Pesos e superfície" subtitle="Ideal (Devine), ajustado e BSA (Mosteller)">
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Peso" value={w} onChange={setW} suffix="kg" />
-        <Field label="Altura" value={h} onChange={setH} suffix="cm" />
-        <SexToggle sex={sex} onChange={setSex} />
-      </div>
-      {(ibw != null || bsa != null) && (
-        <Result>
-          <div className="grid grid-cols-3 gap-2 text-center text-xs">
-            <div><Big v={ibw ?? '—'} /><div className="text-muted-foreground">ideal kg</div></div>
-            <div><Big v={adj ?? '—'} /><div className="text-muted-foreground">ajustado kg</div></div>
-            <div><Big v={bsa ?? '—'} /><div className="text-muted-foreground">BSA m²</div></div>
-          </div>
-        </Result>
-      )}
-    </Card>
-  );
-}
-
-function DoseWeight() {
-  const [mgkg, setMgkg] = useState('');
-  const [w, setW] = useState('');
-  const [max, setMax] = useState('');
-  const res = doseByWeight({ mgPerKg: Number(mgkg), weightKg: Number(w), maxMg: max ? Number(max) : null });
-  return (
-    <Card title="Dose por peso" subtitle="mg/kg × peso (com teto opcional)">
-      <div className="grid grid-cols-3 gap-3">
-        <Field label="Dose" value={mgkg} onChange={setMgkg} suffix="mg/kg" />
-        <Field label="Peso" value={w} onChange={setW} suffix="kg" />
-        <Field label="Máx." value={max} onChange={setMax} suffix="mg" />
-      </div>
-      {res && (
-        <Result>
-          <Big v={res.dose} unit="mg" />
-          {res.capped && <span className="ml-2 rounded-md bg-status-broken/15 px-2 py-0.5 text-xs font-semibold text-status-broken">limitado pelo teto</span>}
-        </Result>
-      )}
-    </Card>
-  );
-}
-
-function Maintenance() {
-  const [w, setW] = useState('');
-  const r = maintenanceFluids({ weightKg: Number(w) });
-  return (
-    <Card title="Hidratação de manutenção" subtitle="Holliday-Segar (100-50-20)">
-      <Field label="Peso" value={w} onChange={setW} suffix="kg" />
-      {r != null && (
-        <Result>
-          <div className="flex items-center justify-between">
-            <span><Big v={r.mlPerDay} unit="mL/dia" /></span>
-            <span><Big v={r.mlPerHour} unit="mL/h" /></span>
-          </div>
-        </Result>
-      )}
-    </Card>
-  );
-}
-
-function Infusion() {
-  const [vol, setVol] = useState('');
-  const [hours, setHours] = useState('');
-  const [micro, setMicro] = useState(false);
-  const res = infusionRate({ volumeMl: Number(vol), hours: Number(hours), dropFactor: micro ? 60 : 20 });
-  return (
-    <Card title="Velocidade de infusão" subtitle="mL/h e gotas/min">
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Volume" value={vol} onChange={setVol} suffix="mL" />
-        <Field label="Tempo" value={hours} onChange={setHours} suffix="h" />
-      </div>
-      <div className="flex gap-2">
-        {[{ k: false, label: 'Macrogotas (20)' }, { k: true, label: 'Microgotas (60)' }].map((o) => (
-          <button key={String(o.k)} type="button" onClick={() => setMicro(o.k)} className={`press min-h-9 flex-1 rounded-lg border text-xs font-medium ${micro === o.k ? 'border-primary/50 bg-primary/15 text-primary' : 'border-border text-muted-foreground'}`}>
-            {o.label}
-          </button>
-        ))}
-      </div>
-      {res && (
-        <Result>
-          <div className="flex items-center justify-between">
-            <span><Big v={res.mlPerHour} unit="mL/h" /></span>
-            <span><Big v={res.dropsPerMin} unit="gtt/min" /></span>
-          </div>
-        </Result>
-      )}
-    </Card>
+    <div className="mt-4 flex flex-wrap gap-2 text-xs">
+      <a href={CLINICAL_SOURCES.anvisaBulario} target="_blank" rel="noreferrer" className="press rounded-xl border border-border px-3 py-2 font-semibold text-muted-foreground hover:text-foreground">
+        Abrir Bulário ANVISA
+      </a>
+      <a href={CLINICAL_SOURCES.anvisaBularioGuide} target="_blank" rel="noreferrer" className="press rounded-xl border border-border px-3 py-2 font-semibold text-muted-foreground hover:text-foreground">
+        Fonte oficial
+      </a>
+    </div>
   );
 }
 
 export function CalculatorsTab() {
+  const [view, setView] = useState<CalculatorView>('syrup');
+
   return (
-    <div className="flex flex-col gap-3">
-      <SectionTitle>Renal &amp; eletrólitos</SectionTitle>
-      <CockcroftGault />
-      <CkdEpi />
-      <CorrectedCa />
-      <CorrectedNa />
-      <AnionGap />
+    <section className="anim-rise flex flex-col gap-4">
+      <header className="surface-1 rounded-2xl p-4 sm:p-5">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Dose e conversão</p>
+        <h2 className="mt-2 text-xl font-semibold sm:text-2xl">Calculadoras clínicas</h2>
+        <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+          Converta a prescrição para a apresentação disponível, com controle manual do protocolo.
+        </p>
+      </header>
 
-      <SectionTitle>Cardiovascular</SectionTitle>
-      <Map />
-      <Qtc />
+      <div className="grid grid-cols-1 gap-2 rounded-2xl border border-border bg-card/50 p-1.5 sm:grid-cols-3" role="tablist" aria-label="Tipo de calculadora">
+        {([
+          ['syrup', 'Xarope'],
+          ['drops', 'Gotas'],
+          ['antibiotic', 'Antibiótico infantil'],
+        ] as const).map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            role="tab"
+            aria-selected={view === key}
+            onClick={() => setView(key)}
+            className={`press min-h-11 rounded-xl px-3 text-sm font-semibold transition-colors ${
+              view === key ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
 
-      <SectionTitle>Antropometria &amp; dose</SectionTitle>
-      <Bmi />
-      <BodyWeight />
-      <DoseWeight />
-      <Maintenance />
-      <Infusion />
-    </div>
+      {view === 'syrup' && <SyrupCalculator />}
+      {view === 'drops' && <DropsCalculator />}
+      {view === 'antibiotic' && <AntibioticCalculator />}
+    </section>
+  );
+}
+
+function SyrupCalculator() {
+  const [dose, setDose] = useState('');
+  const [concentration, setConcentration] = useState('');
+  const [volume, setVolume] = useState('');
+  const result = syrupVolume({
+    doseMg: Number(dose),
+    concentrationMg: Number(concentration),
+    concentrationMl: Number(volume),
+  });
+
+  return (
+    <Panel title="Conversão de xarope" subtitle="Informe a dose prescrita e a concentração da apresentação em mãos.">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <Field label="Dose prescrita" value={dose} onChange={setDose} suffix="mg" />
+        <Field label="Concentração" value={concentration} onChange={setConcentration} suffix="mg" placeholder="ex.: 250" />
+        <Field label="Volume da apresentação" value={volume} onChange={setVolume} suffix="mL" placeholder="ex.: 5" />
+      </div>
+      {result != null && (
+        <Output>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Resultado</p>
+          <p className="mt-1 text-2xl font-bold text-primary">{result} mL</p>
+          <p className="mt-1 text-xs text-muted-foreground">por administração</p>
+        </Output>
+      )}
+      <SourceLinks />
+    </Panel>
+  );
+}
+
+function DropsCalculator() {
+  const [dose, setDose] = useState('');
+  const [concentration, setConcentration] = useState('');
+  const [dropsPerMl, setDropsPerMl] = useState('20');
+  const result = oralDrops({
+    doseMg: Number(dose),
+    concentrationMgPerMl: Number(concentration),
+    dropsPerMl: Number(dropsPerMl),
+  });
+
+  return (
+    <Panel title="Conversão de gotas" subtitle="Confira na bula quantas gotas correspondem a 1 mL na apresentação utilizada.">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <Field label="Dose prescrita" value={dose} onChange={setDose} suffix="mg" />
+        <Field label="Concentração" value={concentration} onChange={setConcentration} suffix="mg/mL" />
+        <Field label="Gotas por mL" value={dropsPerMl} onChange={setDropsPerMl} suffix="gotas" />
+      </div>
+      {result != null && (
+        <Output>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Resultado</p>
+          <div className="mt-1 flex flex-wrap items-baseline gap-x-4 gap-y-1">
+            <span className="text-2xl font-bold text-primary">{result.drops} gotas</span>
+            <span className="text-sm text-muted-foreground">({result.volumeMl} mL)</span>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">por administração</p>
+        </Output>
+      )}
+      <SourceLinks />
+    </Panel>
+  );
+}
+
+function AntibioticCalculator() {
+  const [drug, setDrug] = useState('');
+  const [weight, setWeight] = useState('');
+  const [dosePerKg, setDosePerKg] = useState('');
+  const [frequency, setFrequency] = useState('');
+  const [concentration, setConcentration] = useState('');
+  const [volume, setVolume] = useState('');
+  const [maxPerDose, setMaxPerDose] = useState('');
+  const [maxPerDay, setMaxPerDay] = useState('');
+  const result = pediatricAntibioticDose({
+    weightKg: Number(weight),
+    doseMgKgPerDose: Number(dosePerKg),
+    dosesPerDay: Number(frequency),
+    concentrationMg: Number(concentration),
+    concentrationMl: Number(volume),
+    maxMgPerDose: maxPerDose ? Number(maxPerDose) : null,
+    maxMgPerDay: maxPerDay ? Number(maxPerDay) : null,
+  });
+
+  return (
+    <Panel title="Antibiótico infantil" subtitle="Escolha o fármaco e informe manualmente o esquema da bula profissional ou da sua conduta.">
+      <datalist id="clinical-antibiotics">
+        {ANTIBIOTICS.map((name) => <option key={name} value={name} />)}
+      </datalist>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <TextField label="Fármaco" value={drug} onChange={setDrug} />
+        <Field label="Peso" value={weight} onChange={setWeight} suffix="kg" />
+        <Field label="Dose por administração" value={dosePerKg} onChange={setDosePerKg} suffix="mg/kg/dose" />
+        <Field label="Frequência" value={frequency} onChange={setFrequency} suffix="doses/dia" />
+        <Field label="Concentração" value={concentration} onChange={setConcentration} suffix="mg" />
+        <Field label="Volume da apresentação" value={volume} onChange={setVolume} suffix="mL" />
+        <Field label="Máximo por dose (opcional)" value={maxPerDose} onChange={setMaxPerDose} suffix="mg" />
+        <Field label="Máximo por dia (opcional)" value={maxPerDay} onChange={setMaxPerDay} suffix="mg" />
+      </div>
+      {result != null && (
+        <Output>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Resultado{drug ? ` · ${drug}` : ''}</p>
+          <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div><p className="text-xs text-muted-foreground">Dose</p><p className="text-lg font-bold text-primary">{result.doseMg} mg</p></div>
+            <div><p className="text-xs text-muted-foreground">Volume</p><p className="text-lg font-bold text-primary">{result.volumeMl} mL</p></div>
+            <div><p className="text-xs text-muted-foreground">Total diário</p><p className="text-lg font-bold text-primary">{result.dailyMg} mg</p></div>
+          </div>
+          {result.capped && <p className="mt-3 text-xs font-semibold text-status-warning">Resultado limitado pelo teto informado.</p>}
+        </Output>
+      )}
+      <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
+        O Woolves não sugere dose terapêutica automaticamente. Preencha dose, frequência, concentração e limites conforme a bula profissional e a conduta escolhida.
+      </p>
+      <SourceLinks />
+    </Panel>
   );
 }

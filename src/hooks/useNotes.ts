@@ -24,7 +24,12 @@ export function useNotes(userId: string, initial: Note[]) {
         .select('id, content, updated_at')
         .single();
       if (error) throw error;
-      return data as Note;
+      return {
+        ...(data as Note),
+        tags: [],
+        pinned: false,
+        archived: false,
+      };
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: key }),
   });
@@ -40,6 +45,18 @@ export function useNotes(userId: string, initial: Note[]) {
     // No invalidate on each keystroke; the list refreshes when returning.
   });
 
+  const updateNoteMeta = useMutation({
+    mutationFn: async (v: { id: number; tags?: string[]; pinned?: boolean; archived?: boolean }) => {
+      const { id, ...patch } = v;
+      const { error } = await supabase
+        .from('notes')
+        .update(patch)
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: key }),
+  });
+
   const deleteNote = useMutation({
     mutationFn: async (id: number) => {
       const { error } = await supabase.from('notes').delete().eq('id', id);
@@ -53,6 +70,7 @@ export function useNotes(userId: string, initial: Note[]) {
     refetch: () => qc.invalidateQueries({ queryKey: key }),
     createNote,
     updateNote,
+    updateNoteMeta,
     deleteNote,
   };
 }

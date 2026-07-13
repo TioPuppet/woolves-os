@@ -1,10 +1,31 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { getSupabaseBrowserClient } from '@/lib/supabase/client';
-import { throwIfSupabaseError } from '@/lib/supabase/errors';
-import { MEALS, type Food, type MealType } from '@/lib/nutrition';
+import { ThiingsAsset } from '@/components/ThiingsAsset';
+import { MEALS, type Food, type FoodSearchResult, type FoodSource, type MealType } from '@/lib/nutrition';
 import type { NewFood } from '@/hooks/useNutrition';
+
+const PORTIONS = [50, 100, 150, 200, 250];
+const SOURCE_LABELS: Record<FoodSource, string> = {
+  manual: 'Manual',
+  user: 'Meu alimento',
+  woolves_seed: 'Woolves',
+  open_food_facts: 'Open Food Facts BR',
+  fatsecret: 'FatSecret',
+  tbca: 'TBCA',
+  taco: 'TACO',
+};
+
+function localFoodToSearchResult(food: Food): FoodSearchResult {
+  return {
+    ...food,
+    id: `local:${food.id}`,
+    local_id: food.id,
+    source: food.source ?? 'user',
+    external_id: food.external_id ?? null,
+    verified: food.verified ?? false,
+  };
+}
 
 export function FoodSheet({
   open,
@@ -21,15 +42,15 @@ export function FoodSheet({
   onCreateFood: (f: NewFood) => Promise<Food>;
   pending: boolean;
 }) {
-  const supabase = getSupabaseBrowserClient();
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<Food[]>([]);
+  const [results, setResults] = useState<FoodSearchResult[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selected, setSelected] = useState<Food | null>(null);
+  const [selected, setSelected] = useState<FoodSearchResult | null>(null);
   const [grams, setGrams] = useState('100');
   const [targetMeal, setTargetMeal] = useState<MealType>(meal);
   const [creating, setCreating] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [savingExternal, setSavingExternal] = useState(false);
 
   useEffect(() => {
     if (open) setTargetMeal(meal);
@@ -43,15 +64,11 @@ export function FoodSheet({
     setSearchError(null);
     const t = setTimeout(async () => {
       try {
-        const req = supabase
-          .from('foods')
-          .select('id, name, kcal_per_100, protein_per_100, carb_per_100, fat_per_100')
-          .order('name')
-          .limit(30);
-        const { data, error } = q ? await req.ilike('name', `%${q}%`) : await req;
-        throwIfSupabaseError(error, 'food search');
+        const res = await fetch(`/api/nutrition/foods?q=${encodeURIComponent(q)}`);
+        if (!res.ok) throw new Error('food search failed');
+        const data = (await res.json()) as { foods?: FoodSearchResult[] };
         if (active) {
-          setResults((data ?? []) as Food[]);
+          setResults(data.foods ?? []);
         }
       } catch {
         if (active) {
@@ -66,7 +83,7 @@ export function FoodSheet({
       active = false;
       clearTimeout(t);
     };
-  }, [query, open, supabase, selected, creating]);
+  }, [query, open, selected, creating]);
 
   const preview = useMemo(() => {
     if (!selected) return null;
@@ -86,13 +103,51 @@ export function FoodSheet({
     setSelected(null);
     setCreating(false);
     setQuery('');
+    setSavingExternal(false);
     onClose();
+  };
+
+  const commitSelected = async () => {
+    if (!selected || !(Number(grams) > 0)) return;
+    setSearchError(null);
+
+    if (selected.local_id != null) {
+      onLog(selected.local_id, Number(grams), targetMeal);
+      return;
+    }
+
+    setSavingExternal(true);
+    try {
+      const food = await onCreateFood({
+        name: selected.brand ? `${selected.name} · ${selected.brand}` : selected.name,
+        kcal_per_100: Math.round(selected.kcal_per_100),
+        protein_per_100: selected.protein_per_100,
+        carb_per_100: selected.carb_per_100,
+        fat_per_100: selected.fat_per_100,
+        brand: selected.brand,
+        barcode: selected.barcode,
+        source: selected.source,
+        external_id: selected.external_id,
+        verified: selected.verified,
+        fiber_per_100: selected.fiber_per_100,
+        sugar_per_100: selected.sugar_per_100,
+        sodium_mg_per_100: selected.sodium_mg_per_100,
+        nova_group: selected.nova_group,
+        nutriscore_grade: selected.nutriscore_grade,
+        image_url: selected.image_url,
+      });
+      onLog(food.id, Number(grams), targetMeal);
+    } catch {
+      setSearchError('Não foi possível salvar esse alimento agora.');
+    } finally {
+      setSavingExternal(false);
+    }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
       <button type="button" aria-label="Fechar" onClick={close} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-      <div className="rise glass relative flex max-h-[88vh] w-full max-w-app flex-col rounded-t-3xl border border-border p-5 sm:rounded-3xl">
+      <div className="nutrition-sheet rise glass relative flex max-h-[88vh] w-full max-w-app flex-col rounded-t-3xl border border-border p-5 sm:rounded-3xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold">
             {creating ? 'Novo alimento' : selected ? 'Adicionar' : 'Buscar alimento'}
@@ -109,7 +164,7 @@ export function FoodSheet({
             onCancel={() => setCreating(false)}
             onCreate={async (f) => {
               const food = await onCreateFood(f);
-              setSelected(food);
+              setSelected(localFoodToSearchResult(food));
               setGrams('100');
               setCreating(false);
             }}
@@ -122,7 +177,31 @@ export function FoodSheet({
               </svg>
               Voltar
             </button>
-            <p className="text-sm font-semibold">{selected.name}</p>
+            <div className="flex items-center gap-3 rounded-2xl border border-white/5 bg-black/15 p-3">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10">
+                <ThiingsAsset assetKey="alimentacao" size={30} />
+              </span>
+              <div className="min-w-0">
+                <p className="truncate text-base font-semibold">{selected.name}</p>
+                <p className="text-xs text-muted-foreground">{selected.kcal_per_100} kcal por 100g</p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-full border border-primary/25 bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-primary">
+                {SOURCE_LABELS[selected.source] ?? 'Base externa'}
+              </span>
+              {selected.verified && (
+                <span className="rounded-full border border-status-ontrack/25 bg-status-ontrack/10 px-2.5 py-1 text-[11px] font-semibold text-status-ontrack">
+                  verificado
+                </span>
+              )}
+              {selected.barcode && (
+                <span className="rounded-full border border-border px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">
+                  {selected.barcode}
+                </span>
+              )}
+            </div>
 
             <label className="text-sm font-medium">Quantidade (g)</label>
             <input
@@ -132,6 +211,20 @@ export function FoodSheet({
               onChange={(e) => setGrams(e.target.value)}
               className="min-h-11 w-full rounded-xl border border-border bg-card px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/60"
             />
+            <div className="grid grid-cols-5 gap-1.5">
+              {PORTIONS.map((portion) => (
+                <button
+                  key={portion}
+                  type="button"
+                  onClick={() => setGrams(String(portion))}
+                  className={`press min-h-9 rounded-xl border text-xs font-semibold ${
+                    Number(grams) === portion ? 'border-primary/50 bg-primary/15 text-primary' : 'border-border text-muted-foreground'
+                  }`}
+                >
+                  {portion}g
+                </button>
+              ))}
+            </div>
 
             <div>
               <p className="mb-1.5 text-xs font-medium text-muted-foreground">Refeição</p>
@@ -152,21 +245,39 @@ export function FoodSheet({
             </div>
 
             {preview && (
-              <div className="grid grid-cols-4 gap-2 rounded-xl bg-muted/50 px-4 py-3 text-center text-xs">
-                <div><div className="text-sm font-semibold text-primary">{preview.kcal}</div>kcal</div>
-                <div><div className="text-sm font-semibold">{preview.carb}</div>carbo</div>
-                <div><div className="text-sm font-semibold">{preview.protein}</div>prot</div>
-                <div><div className="text-sm font-semibold">{preview.fat}</div>gord</div>
+              <div className="grid grid-cols-4 gap-2 rounded-2xl border border-white/5 bg-black/15 p-3 text-center text-xs text-muted-foreground">
+                <div className="min-w-0">
+                  <div className="truncate text-base font-bold tabular-nums text-primary">{preview.kcal}</div>
+                  kcal
+                </div>
+                <div className="min-w-0">
+                  <div className="truncate text-base font-bold tabular-nums text-sky-300">{preview.carb}</div>
+                  carbo
+                </div>
+                <div className="min-w-0">
+                  <div className="truncate text-base font-bold tabular-nums text-status-ontrack">{preview.protein}</div>
+                  prot
+                </div>
+                <div className="min-w-0">
+                  <div className="truncate text-base font-bold tabular-nums text-amber-300">{preview.fat}</div>
+                  gord
+                </div>
               </div>
+            )}
+
+            {searchError && (
+              <p className="rounded-2xl border border-status-broken/25 bg-status-broken/10 px-3 py-2 text-xs text-status-broken">
+                {searchError}
+              </p>
             )}
 
             <button
               type="button"
-              disabled={pending || !(Number(grams) > 0)}
-              onClick={() => onLog(selected.id, Number(grams), targetMeal)}
+              disabled={pending || savingExternal || !(Number(grams) > 0)}
+              onClick={commitSelected}
               className="press min-h-12 w-full rounded-2xl bg-primary text-sm font-semibold text-primary-foreground disabled:opacity-50"
             >
-              {pending ? 'Registrando…' : 'Adicionar ao diário'}
+              {pending || savingExternal ? 'Registrando…' : 'Adicionar ao diário'}
             </button>
           </div>
         ) : (
@@ -195,11 +306,19 @@ export function FoodSheet({
                       setSelected(f);
                       setGrams('100');
                     }}
-                    className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-muted/50"
+                    className="press flex w-full items-center justify-between gap-3 rounded-2xl px-3 py-3 text-left transition-colors hover:bg-muted/50"
                   >
-                    <span className="min-w-0 flex-1 truncate text-sm">{f.name}</span>
-                    <span className="shrink-0 text-xs text-muted-foreground">
-                      {f.kcal_per_100} kcal · {f.protein_per_100}g prot
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10">
+                      <ThiingsAsset assetKey="alimentacao" size={24} />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-semibold">{f.name}</span>
+                      <span className="block truncate text-xs text-muted-foreground">
+                        {f.brand ? `${f.brand} · ` : ''}{f.kcal_per_100} kcal · {f.protein_per_100}g proteína
+                      </span>
+                    </span>
+                    <span className="shrink-0 rounded-full border border-border px-2 py-1 text-[10px] font-semibold text-muted-foreground">
+                      {SOURCE_LABELS[f.source] ?? 'Base'}
                     </span>
                   </button>
                 ))
@@ -208,7 +327,7 @@ export function FoodSheet({
             <button
               type="button"
               onClick={() => setCreating(true)}
-              className="press mt-3 min-h-11 w-full rounded-xl border border-dashed border-border text-sm font-medium text-muted-foreground"
+              className="press mt-3 min-h-11 w-full rounded-2xl border border-dashed border-primary/35 text-sm font-semibold text-primary"
             >
               + Criar alimento
             </button>

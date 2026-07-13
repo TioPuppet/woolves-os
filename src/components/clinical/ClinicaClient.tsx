@@ -1,5 +1,6 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useState } from 'react';
 import Link from 'next/link';
 import { ThiingsAsset } from '@/components/ThiingsAsset';
@@ -7,16 +8,17 @@ import { cn } from '@/lib/utils';
 import { useDrugs, useInteractions } from '@/hooks/useClinical';
 import { type Drug, type DrugInteraction } from '@/lib/clinical/drugs';
 import { DrugsTab } from './DrugsTab';
-import { CalculatorsTab } from './CalculatorsTab';
-import { ScoresTab } from './ScoresTab';
 import { InteractionsTab } from './InteractionsTab';
+import { ClinicalCockpit } from './ClinicalCockpit';
 
-type Tab = 'farmacos' | 'calc' | 'escores' | 'interacoes';
+const CalculatorsTab = dynamic(() => import('./CalculatorsTab').then((mod) => mod.CalculatorsTab), { ssr: false });
+
+type Tab = 'cockpit' | 'farmacos' | 'calc' | 'interacoes';
 
 const TABS: { key: Tab; label: string }[] = [
+  { key: 'cockpit', label: 'Comando' },
   { key: 'farmacos', label: 'Fármacos' },
   { key: 'calc', label: 'Calculadoras' },
-  { key: 'escores', label: 'Escores' },
   { key: 'interacoes', label: 'Interações' },
 ];
 
@@ -29,7 +31,9 @@ export function ClinicaClient({
   initialDrugs: Drug[];
   initialInteractions: DrugInteraction[];
 }) {
-  const [tab, setTab] = useState<Tab>('farmacos');
+  const [tab, setTab] = useState<Tab>('cockpit');
+  const [clinicalQuery, setClinicalQuery] = useState('');
+  const [focusDrugId, setFocusDrugId] = useState<number | null>(null);
   const { drugs, createDrug, updateDrug, deleteDrug } = useDrugs(userId, initialDrugs);
   const { interactions, createInteraction, deleteInteraction } = useInteractions(
     userId,
@@ -37,7 +41,7 @@ export function ClinicaClient({
   );
 
   return (
-    <main className="flex min-h-screen flex-col gap-4 px-5 pb-28 pt-10">
+    <main className="clinical-world flex min-h-screen flex-col gap-4 px-5 pb-28 pt-10">
       <header className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <ThiingsAsset assetKey="saude" size={30} />
@@ -57,7 +61,7 @@ export function ClinicaClient({
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
+      <nav className="clinical-tabs grid grid-cols-2 gap-2 rounded-2xl p-1 sm:grid-cols-4" aria-label="Áreas da Clínica">
         {TABS.map((t) => (
           <button
             key={t.key}
@@ -73,18 +77,31 @@ export function ClinicaClient({
             {t.label}
           </button>
         ))}
-      </div>
+      </nav>
 
+      {tab === 'cockpit' && (
+        <ClinicalCockpit
+          drugs={drugs}
+          query={clinicalQuery}
+          onQueryChange={setClinicalQuery}
+          onOpenTab={(nextTab) => setTab(nextTab)}
+          onOpenDrug={(id) => {
+            setFocusDrugId(id);
+            setTab('farmacos');
+          }}
+        />
+      )}
       {tab === 'farmacos' && (
         <DrugsTab
+          userId={userId}
           drugs={drugs}
           onCreate={(d) => createDrug.mutate(d)}
           onUpdate={(id, patch) => updateDrug.mutate({ id, ...patch })}
           onDelete={(id) => deleteDrug.mutate(id)}
+          focusDrugId={focusDrugId}
         />
       )}
       {tab === 'calc' && <CalculatorsTab />}
-      {tab === 'escores' && <ScoresTab />}
       {tab === 'interacoes' && (
         <InteractionsTab
           drugs={drugs}

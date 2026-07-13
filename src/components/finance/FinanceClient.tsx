@@ -1,6 +1,7 @@
 'use client';
 
-import { useDeferredValue, useMemo, useState } from 'react';
+import dynamic from 'next/dynamic';
+import { useDeferredValue, useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useFinance } from '@/hooks/useFinance';
 import {
@@ -25,11 +26,12 @@ import { cn } from '@/lib/utils';
 import { CountUp } from './CountUp';
 import { CurrencyInput } from './CurrencyInput';
 import { Donut } from './Donut';
-import { DreamGoalsSheet } from './DreamGoalsSheet';
 import { TrendChart } from './TrendChart';
-import { BudgetsSheet } from './BudgetsSheet';
-import { RecurringSheet } from './RecurringSheet';
-import { TxEditSheet } from './TxEditSheet';
+
+const BudgetsSheet = dynamic(() => import('./BudgetsSheet').then((mod) => mod.BudgetsSheet), { ssr: false });
+const RecurringSheet = dynamic(() => import('./RecurringSheet').then((mod) => mod.RecurringSheet), { ssr: false });
+const DreamGoalsSheet = dynamic(() => import('./DreamGoalsSheet').then((mod) => mod.DreamGoalsSheet), { ssr: false });
+const TxEditSheet = dynamic(() => import('./TxEditSheet').then((mod) => mod.TxEditSheet), { ssr: false });
 
 const brl = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -140,6 +142,7 @@ export function FinanceClient({
   const [recurringOpen, setRecurringOpen] = useState(false);
   const [dreamGoalsOpen, setDreamGoalsOpen] = useState(false);
   const [financeView, setFinanceView] = useState<FinanceView>('overview');
+  const [, startFinanceTransition] = useTransition();
   const [historyQuery, setHistoryQuery] = useState('');
   const [historyType, setHistoryType] = useState<'all' | 'expense' | 'income'>('all');
   const [historyCategory, setHistoryCategory] = useState('all');
@@ -284,7 +287,7 @@ export function FinanceClient({
 
       {/* Month navigation */}
       <div className="flex items-center justify-between">
-        <button type="button" onClick={() => setMonthKey((k) => shiftMonth(k, -1))} aria-label="Mês anterior" className="press rounded-lg bg-card px-3 py-1.5 text-muted-foreground">
+        <button type="button" onClick={() => startFinanceTransition(() => setMonthKey((k) => shiftMonth(k, -1)))} aria-label="Mês anterior" className="press rounded-lg bg-card px-3 py-1.5 text-muted-foreground">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
             <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
@@ -292,12 +295,12 @@ export function FinanceClient({
         <div className="flex flex-col items-center">
           <span className="text-sm font-semibold">{monthLabel(monthKey)}</span>
           {!isCurrent && (
-            <button type="button" onClick={() => setMonthKey(cur)} className="press text-[11px] text-primary">
+            <button type="button" onClick={() => startFinanceTransition(() => setMonthKey(cur))} className="press text-[11px] text-primary">
               voltar ao mês atual
             </button>
           )}
         </div>
-        <button type="button" onClick={() => setMonthKey((k) => shiftMonth(k, 1))} aria-label="Próximo mês" className="press rounded-lg bg-card px-3 py-1.5 text-muted-foreground">
+        <button type="button" onClick={() => startFinanceTransition(() => setMonthKey((k) => shiftMonth(k, 1)))} aria-label="Próximo mês" className="press rounded-lg bg-card px-3 py-1.5 text-muted-foreground">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
             <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
@@ -368,7 +371,7 @@ export function FinanceClient({
           <button
             key={view.key}
             type="button"
-            onClick={() => setFinanceView(view.key)}
+            onClick={() => startFinanceTransition(() => setFinanceView(view.key))}
             className={cn(
               'press min-h-10 rounded-xl text-xs font-semibold transition-colors',
               financeView === view.key
@@ -833,16 +836,16 @@ export function FinanceClient({
         <p className="text-sm text-muted-foreground">Nenhum lançamento em {monthLabel(monthKey)}.</p>
       ) : null}
 
-      <BudgetsSheet
+      {budgetsOpen ? <BudgetsSheet
         open={budgetsOpen}
         budgets={fin.budgets}
         spentByCategory={spentByCat}
         onSet={(c, v) => fin.setBudget.mutate({ category: c, monthly_limit_brl: v })}
         onDelete={(c) => fin.deleteBudget.mutate(c)}
         onClose={() => setBudgetsOpen(false)}
-      />
+      /> : null}
 
-      <RecurringSheet
+      {recurringOpen ? <RecurringSheet
         open={recurringOpen}
         recurring={fin.recurring}
         monthLabel={monthLabel(monthKey)}
@@ -852,9 +855,9 @@ export function FinanceClient({
         onDelete={(id) => fin.deleteRecurring.mutate(id)}
         onApply={() => fin.applyRecurring.mutate(monthKey)}
         onClose={() => setRecurringOpen(false)}
-      />
+      /> : null}
 
-      <DreamGoalsSheet
+      {dreamGoalsOpen ? <DreamGoalsSheet
         open={dreamGoalsOpen}
         goals={fin.dreamGoals}
         saving={fin.addDreamGoal.isPending}
@@ -863,7 +866,7 @@ export function FinanceClient({
         onContribute={(id, amount) => fin.contributeDreamGoal.mutate({ id, amount })}
         onArchive={(id) => fin.updateDreamGoal.mutate({ id, archived: true })}
         onClose={() => setDreamGoalsOpen(false)}
-      />
+      /> : null}
 
       {editing ? (
         <TxEditSheet
