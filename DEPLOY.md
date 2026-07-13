@@ -16,19 +16,29 @@ Cada `git push` faz redeploy automático.
 
 ## 2. Banco de dados (Supabase)
 
-Aplique **todas** as migrations em ordem até a mais recente no SQL Editor (a app aponta para o mesmo banco). Se o banco já está aplicado até `0035`, rode apenas a `0036`:
+A fonte oficial do schema são os arquivos individuais em `supabase/migrations/`, aplicados em ordem pelo nome. O estado atual inclui as migrations numeradas até `0037` e as migrations datadas até `20260713090000`.
+
+Se o banco já estava aplicado até `0036`, ainda faltam estas migrations mais recentes:
 
 ```
-0028_daily_mission.sql
-0029_water_remove.sql
-0030_nutrition_macros.sql
-0031_taco_full.sql
-0032_finance_v2.sql
-0033_auth_username.sql
-0034_fix_fk_cascade.sql
-0035_cardio.sql
-0036_harden_daily_mission_rpcs.sql
+0037_profile_avatar.sql
+20260710133246_activity_details.sql
+20260710202836_sleep_window.sql
+20260711004432_scheduled_finance.sql
+20260711015123_dream_goals.sql
+20260712015927_nutrition_food_sources.sql
+20260712135206_nutrition_mark_taco_sources.sql
+20260712143055_nutrition_progress_measurements.sql
+20260712145509_nutrition_measurement_protocol.sql
+20260712151251_nutrition_1_0_planning_and_goals.sql
+20260712164759_health_integrations_foundation.sql
+20260712184215_clinical_anvisa_sources.sql
+20260712210000_clinical_catalog.sql
+20260712230000_harden_clinician_role.sql
+20260713090000_workspace_focus.sql
 ```
+
+O arquivo `supabase/setup_all.sql` é legado e não representa o schema atual. Não o use para substituir a sequência de migrations.
 
 ## 3. Autenticação (Supabase → Authentication)
 

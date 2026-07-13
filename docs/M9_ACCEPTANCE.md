@@ -1,6 +1,6 @@
-# Woolves Life OS — Checklist de Aceite (M0–M9)
+# Woolves Life OS — Checklist de Aceite (M0–M10)
 
-_Última auditoria: M9 · QA final. Marque `[x]` ao validar cada item no ambiente de produção (Vercel + Supabase novo)._
+_Última auditoria: 13/07/2026 · QA local e revisão de release. Marque `[x]` ao validar cada item no ambiente de produção (Vercel + Supabase)._
 
 ---
 
@@ -16,7 +16,7 @@ _Última auditoria: M9 · QA final. Marque `[x]` ao validar cada item no ambient
 
 - [x] Next.js elevado para **14.2.35** (último patch da linha 14.2); vulnerabilidades **críticas resolvidas** (7 → 2).
 - [ ] _Backlog:_ migração para Next 15/16 resolve as 2 restantes (1 high / 1 moderate). São majors com breaking changes — agendar pós-MVP. Aplicabilidade real ao app é baixa (sem WebSocket upgrades, App Router e não Pages i18n, sem CSS de terceiro no build).
-- [x] **RLS habilitado em 27/27 tabelas**, cada uma com policy escopada a `auth.uid()` ou herança por tabela-pai.
+- [x] **RLS habilitado em 41/41 tabelas**, cada uma com policy escopada a `auth.uid()` ou herança por tabela-pai.
 - [x] Tabelas de referência (`foods`, `exercises`): `SELECT` = `is_seed or user_id=auth.uid()`; escrita restrita ao dono (seed protegido).
 - [x] Tabelas-filhas (`meal_items`, `plan_exercises`, `set_logs`): propriedade herdada do pai via `EXISTS`.
 - [x] Ledger/logs (`exp_events`, `water_logs`, `habit_logs`, `checkins`): só `SELECT`; escrita exclusivamente via RPC.
@@ -80,7 +80,7 @@ _Última auditoria: M9 · QA final. Marque `[x]` ao validar cada item no ambient
 
 ### M9 — QA final
 - [x] Bump de segurança do Next.
-- [x] Auditoria RLS completa (sem gaps).
+- [x] Auditoria RLS completa (41/41 tabelas com RLS explícito).
 - [x] Script de teste de isolamento (`supabase/tests/rls_isolation.sql`).
 - [x] Este checklist de aceite.
 
@@ -92,13 +92,15 @@ _Última auditoria: M9 · QA final. Marque `[x]` ao validar cada item no ambient
 - [x] Caches de dados client-side escopados por usuário/timezone nos fluxos principais.
 - [x] Smoke visual mobile local em login/cadastro.
 - [ ] Configurar ESLint completo quando houver autorização para instalar dependências de lint.
+- [x] Boas-vindas diárias: uma vez por usuário/dia, sem scrollar o Today por trás e sem nav visível antes da entrada.
+- [x] Build, typecheck, checagem rígida e 66 testes locais aprovados em 13/07/2026.
 
 ---
 
 ## Qualidade / smoke test manual (produção)
 
-- [ ] `npx tsc --noEmit` limpo (validado em dev).
-- [ ] `npx vitest run` → 20/20 (validado em dev).
+- [x] `npx tsc --noEmit` limpo localmente.
+- [x] `npm test` → 66/66 testes aprovados localmente.
 - [ ] `npm run build` conclui na Vercel.
 - [ ] Login → onboarding → dashboard renderiza status do dia.
 - [ ] Registrar água/hábito/check-in credita EXP uma única vez por dia (sem duplicação no ledger).
