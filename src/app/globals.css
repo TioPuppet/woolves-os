@@ -648,6 +648,7 @@ html[data-welcome-open='true'] .bottom-nav-shell {
 .welcome-gate {
   padding-top: max(1rem, env(safe-area-inset-top));
   padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  overscroll-behavior: contain;
 }
 
 /* Accessibility: honor reduced-motion for ambient/looping UI motion. */

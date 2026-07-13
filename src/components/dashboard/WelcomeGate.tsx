@@ -72,6 +72,19 @@ export function WelcomeGate({
     if (typeof document === 'undefined') return;
     if (visible) {
       document.documentElement.dataset.welcomeOpen = 'true';
+      const previousBodyOverflow = document.body.style.overflow;
+      const previousDocumentOverflow = document.documentElement.style.overflow;
+      const previousOverscrollBehavior = document.documentElement.style.overscrollBehavior;
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+      document.documentElement.style.overscrollBehavior = 'none';
+
+      return () => {
+        delete document.documentElement.dataset.welcomeOpen;
+        document.body.style.overflow = previousBodyOverflow;
+        document.documentElement.style.overflow = previousDocumentOverflow;
+        document.documentElement.style.overscrollBehavior = previousOverscrollBehavior;
+      };
     } else {
       delete document.documentElement.dataset.welcomeOpen;
     }
@@ -96,7 +109,7 @@ export function WelcomeGate({
       role="dialog"
       aria-modal="true"
       aria-labelledby="welcome-title"
-      className="welcome-gate fixed inset-0 z-[80] flex h-[100dvh] items-center justify-center overflow-y-auto bg-background px-5"
+      className="welcome-gate fixed inset-0 z-[80] flex h-[100dvh] items-center justify-center overflow-y-auto overscroll-contain bg-background px-5"
     >
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,hsl(46_67%_47%/0.22),transparent_34%),radial-gradient(circle_at_82%_18%,hsl(252_96%_68%/0.12),transparent_30%),linear-gradient(180deg,hsl(240_12%_4%),hsl(240_18%_3%))]" />
       <div className="absolute left-1/2 top-8 h-px w-[78vw] max-w-sm -translate-x-1/2 bg-gradient-to-r from-transparent via-primary/70 to-transparent" />
