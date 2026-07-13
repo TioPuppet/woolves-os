@@ -632,6 +632,24 @@ select::-ms-expand {
   border-color: hsl(46 67% 47% / 0.28);
 }
 
+/* The daily welcome owns the first interaction; keep the global nav out of
+   the way until the user enters the day. */
+.bottom-nav-shell {
+  transition: opacity 180ms ease, transform 180ms ease, visibility 180ms ease;
+}
+
+html[data-welcome-open='true'] .bottom-nav-shell {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(12px);
+  visibility: hidden;
+}
+
+.welcome-gate {
+  padding-top: max(1rem, env(safe-area-inset-top));
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
 /* Accessibility: honor reduced-motion for ambient/looping UI motion. */
 @media (prefers-reduced-motion: reduce) {
   *,

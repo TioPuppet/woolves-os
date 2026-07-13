@@ -43,18 +43,48 @@ export function WelcomeGate({
   const line = useMemo(() => lineForDay(timezone), [timezone]);
 
   useEffect(() => {
+    const readSeen = () => {
+      try {
+        const localSeen = window.localStorage.getItem(storageKey) === 'seen';
+        if (localSeen) return true;
+
+        // Migrate the previous per-session flag so the welcome does not
+        // unexpectedly reappear for users who already dismissed it today.
+        const sessionSeen = window.sessionStorage.getItem(storageKey) === 'seen';
+        if (sessionSeen) {
+          window.localStorage.setItem(storageKey, 'seen');
+          return true;
+        }
+      } catch {
+        return false;
+      }
+      return false;
+    };
+
     try {
-      setVisible(sessionStorage.getItem(storageKey) !== 'seen');
+      setVisible(!readSeen());
     } catch {
       setVisible(true);
     }
   }, [storageKey]);
 
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (visible) {
+      document.documentElement.dataset.welcomeOpen = 'true';
+    } else {
+      delete document.documentElement.dataset.welcomeOpen;
+    }
+    return () => {
+      delete document.documentElement.dataset.welcomeOpen;
+    };
+  }, [visible]);
+
   const enter = () => {
     try {
-      sessionStorage.setItem(storageKey, 'seen');
+      window.localStorage.setItem(storageKey, 'seen');
     } catch {
-      // Session storage is only a convenience; entering the app must still work.
+      // Storage is only a convenience; entering the app must still work.
     }
     setVisible(false);
   };
@@ -62,26 +92,31 @@ export function WelcomeGate({
   if (!visible) return null;
 
   return (
-    <section className="fixed inset-0 z-[80] flex min-h-screen items-center justify-center overflow-hidden bg-background px-5 py-8">
+    <section
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="welcome-title"
+      className="welcome-gate fixed inset-0 z-[80] flex h-[100dvh] items-center justify-center overflow-y-auto bg-background px-5"
+    >
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,hsl(46_67%_47%/0.22),transparent_34%),radial-gradient(circle_at_82%_18%,hsl(252_96%_68%/0.12),transparent_30%),linear-gradient(180deg,hsl(240_12%_4%),hsl(240_18%_3%))]" />
       <div className="absolute left-1/2 top-8 h-px w-[78vw] max-w-sm -translate-x-1/2 bg-gradient-to-r from-transparent via-primary/70 to-transparent" />
 
-      <div className="relative flex w-full max-w-app flex-col items-center text-center">
-        <div className="mb-7 grid h-36 w-36 place-items-center rounded-full border border-primary/25 bg-primary/5 shadow-[0_0_80px_-28px_hsl(46_67%_47%/0.8)]">
+      <div className="relative flex w-full max-w-app flex-col items-center py-5 text-center sm:py-8">
+        <div className="mb-5 grid h-28 w-28 place-items-center rounded-full border border-primary/25 bg-primary/5 shadow-[0_0_80px_-28px_hsl(46_67%_47%/0.8)] sm:mb-7 sm:h-36 sm:w-36">
           <ThiingsAsset assetKey="wolf-obsidian" size={112} alt="Woolves" />
         </div>
 
-        <p className="mb-3 text-[11px] font-semibold uppercase text-primary">
+        <p className="mb-2 text-[11px] font-semibold uppercase text-primary sm:mb-3">
           Woolves Life OS
         </p>
-        <h1 className="max-w-[18rem] text-balance text-3xl font-semibold leading-tight">
+        <h1 id="welcome-title" className="max-w-[20rem] text-balance text-2xl font-semibold leading-tight sm:text-3xl">
           {line.title}
         </h1>
-        <p className="mt-5 max-w-[20rem] text-balance text-sm leading-6 text-muted-foreground">
+        <p className="mt-3 max-w-[22rem] text-balance text-sm leading-5 text-muted-foreground sm:mt-5 sm:leading-6">
           {line.body}
         </p>
 
-        <div className="mt-8 w-full rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-left">
+        <div className="mt-5 w-full rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-left sm:mt-8">
           <p className="text-[11px] font-semibold uppercase text-muted-foreground">
             Comando do dia
           </p>
@@ -93,7 +128,7 @@ export function WelcomeGate({
         <button
           type="button"
           onClick={enter}
-          className="press mt-7 min-h-12 w-full rounded-2xl bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-[0_18px_48px_-24px_hsl(46_67%_47%/0.85)]"
+          className="press mt-5 min-h-12 w-full rounded-2xl bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-[0_18px_48px_-24px_hsl(46_67%_47%/0.85)] sm:mt-7"
         >
           Entrar no dia
         </button>

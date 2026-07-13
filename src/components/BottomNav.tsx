@@ -151,7 +151,7 @@ export function BottomNav() {
         </div>
       ) : null}
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-app">
+      <nav className="bottom-nav-shell fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-app">
         <div className="glass flex items-end justify-around border-t border-white/5 px-2 pb-[calc(env(safe-area-inset-bottom)+6px)] pt-2">
           <Tab {...TABS[0]!} active={isActive(TABS[0]!.href)} />
           <Tab {...TABS[1]!} active={isActive(TABS[1]!.href)} />
